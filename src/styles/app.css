@@ -55,18 +55,22 @@
 
 body {
 	line-height: 1.5;
+	font-size: var(--20px, 20px);
 }
 
 h1 {
 	font-size: var(--48px, 48px);
+	line-height: 1;
 }
 
 h2 {
 	font-size: var(--36px, 36px);
+	line-height: 1.2;
 }
 
 h3 {
 	font-size: var(--28px, 28px);
+	line-height: 1.2;
 }
 
 h4 {
@@ -81,12 +85,12 @@ h6 {
 	font-size: var(--20px, 20px);
 }
 
-p {
-	font-size: var(--20px, 20px);
-}
-
 svg {
 	display: block;
 	width: 100%;
 	height: auto;
+}
+
+section {
+	margin-bottom: 32px;
 }
