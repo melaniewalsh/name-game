@@ -5,11 +5,12 @@
 	import Footer from "$components/Footer.svelte";
 	import Ul from "$components/Ul.svelte";
 	import Details from "$components/Details.svelte";
+	import Figure from "$components/Figure.svelte";
 
 	const copy = getContext("copy");
 	const { body } = copy;
 	const { title, description } = copy.meta;
-	const components = { Ul, Details };
+	const components = { Ul, Details, Figure };
 	// const data = getContext("data");
 </script>
 
