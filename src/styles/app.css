@@ -64,12 +64,12 @@ h1 {
 }
 
 h2 {
-	font-size: var(--36px, 36px);
+	font-size: var(--28px, 28px);
 	line-height: 1.2;
 }
 
 h3 {
-	font-size: var(--28px, 28px);
+	font-size: var(--24px, 24px);
 	line-height: 1.2;
 }
 

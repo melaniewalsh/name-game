@@ -25,7 +25,7 @@
 
 <style>
 	article {
-		max-width: 720px;
+		max-width: 640px;
 		margin: 0 auto;
 		padding: var(--16px);
 	}
