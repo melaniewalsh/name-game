@@ -18,14 +18,14 @@
 
 	/* presets (used in reset.css) */
 	--border-radius: 2px;
-	--font-body: var(--serif);
+	--font-body: var(--sans);
 	--font-form: var(--sans);
 	--color-bg: var(--color-white);
-	--color-fg: var(--color-gray-900);
-	--color-primary: var(--color-black);
-	--color-link: var(--color-black);
-	--color-link-hover: var(--color-black);
-	--color-focus: var(--color-red);
+	--color-fg: var(--color-gray-1000);
+	--color-primary: var(--color-fg);
+	--color-link: var(--color-fg);
+	--color-link-hover: var(--color-fg);
+	--color-focus: var(--color-red-aa);
 	--color-mark: var(--color-yellow);
 	--color-selection: var(--color-gray-300);
 	--color-border: var(--color-gray-300);
@@ -55,22 +55,25 @@
 
 body {
 	line-height: 1.5;
-	font-size: var(--20px, 20px);
+	font-size: var(--24px, 24px);
 }
 
 h1 {
-	font-size: var(--48px, 48px);
+	font-size: var(--64px, 64px);
 	line-height: 1;
+	font-weight: 700;
 }
 
 h2 {
-	font-size: var(--28px, 28px);
+	font-size: var(--32px, 32px);
 	line-height: 1.2;
+	font-weight: 700;
 }
 
 h3 {
-	font-size: var(--24px, 24px);
+	font-size: var(--28px, 28px);
 	line-height: 1.2;
+	font-weight: 700;
 }
 
 h4 {
@@ -85,6 +88,10 @@ h6 {
 	font-size: var(--20px, 20px);
 }
 
+p, li {
+	margin: 1em auto;
+}
+
 svg {
 	display: block;
 	width: 100%;
@@ -92,5 +99,25 @@ svg {
 }
 
 section {
-	margin-bottom: 32px;
+	margin-bottom: 2em;
 }
+
+@media screen and (max-width: 768px) {
+	body {
+		font-size: var(--20px, 20px);
+	}
+
+	h1 {
+		font-size: var(--36px, 36px);
+	}
+
+	h2 {
+		font-size: var(--28px, 28px);
+	}
+
+	h3 {
+		font-size: var(--24px, 24px);
+	}
+
+	
+}	

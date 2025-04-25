@@ -9,13 +9,13 @@
 
 	const copy = getContext("copy");
 	const { body } = copy;
-	const { title, description } = copy.meta;
+	const { title, description, byline } = copy.meta;
 	const components = { Ul, Details, Figure };
 	// const data = getContext("data");
 </script>
 
 <article>
-	<Hero {title} {description}></Hero>
+	<Hero {title} {description} {byline}></Hero>
 	<CMS {body} {components} />
 </article>
 
@@ -25,7 +25,7 @@
 
 <style>
 	article {
-		max-width: 640px;
+		max-width: 32em;
 		margin: 0 auto;
 		padding: var(--16px);
 	}

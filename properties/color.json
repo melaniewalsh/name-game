@@ -39,20 +39,32 @@
 		"gray-1000": {
 			"value": "rgb(25, 25, 25)"
 		},
-		"purple": {
-			"value": "#a239ca"
-		},
 		"blue": {
-			"value": "#4717f6"
+			"value": "#00C0F2"
 		},
-		"green": {
-			"value": "#34a29e"
+		"blue-aa": {
+			"value": "#05A0CA"
 		},
-		"red": {
-			"value": "#ff533d"
+		"blue-aaa": {
+			"value": "#0480A1"
+		},
+		"green-aa": {
+			"value": "#00A525"
+		},
+		"green-aaa": {
+			"value": "#00881E"
+		},
+		"red-aa": {
+			"value": "#FE3E18"
+		},
+		"red-aaa": {
+			"value": "#E32701"
 		},
 		"yellow": {
-			"value": "#e5e338"
+			"value": "#F0DD03"
+		},
+		"brown": {
+			"value": "#421C14"
 		}
 	}
 }

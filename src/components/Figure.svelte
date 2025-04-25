@@ -13,8 +13,8 @@
 	figure {
 		display: block;
 		width: 100%;
-		margin: 32px auto;
-		max-width: 480px;
+		margin: 2em auto;
+		max-width: 20em;
 	}
 
 	figure img {
