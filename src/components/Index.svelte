@@ -7,11 +7,12 @@
 	import Details from "$components/Details.svelte";
 	import Figure from "$components/Figure.svelte";
 	import DotPlot from "$components/DotPlot.svelte";
+	import Examples from "$components/Examples.svelte";
 
 	const copy = getContext("copy");
 	const { body } = copy;
 	const { title, description, byline } = copy.meta;
-	const components = { Ul, Details, Figure, DotPlot };
+	const components = { Ul, Details, Figure, DotPlot, Examples };
 	// const data = getContext("data");
 </script>
 
