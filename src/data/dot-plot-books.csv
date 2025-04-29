@@ -1,0 +1,14 @@
+animal,total_count,she_count,proportion_female,title,author,pub_date,num_ratings,book_count,emoji
+bird,24,15,0.625,Are You My Mother?,P.D. Eastman,"June 12, 1960",245845,16,🐦
+duck,14,8,0.5714285714285714,"Brown Bear, Brown Bear, What Do You See?",Bill Martin Jr.,"January 1, 1967",184033,11,🦆
+cat,35,19,0.5428571428571428,"The Cat in the Hat (The Cat in the Hat, #1)",Dr. Seuss,"March 12, 1957",551237,29,🐱
+pig,33,14,0.42424242424242425,The True Story of the 3 Little Pigs,Jon Scieszka,"October 1, 1989",192544,16,🐷
+mouse,55,22,0.4,Green Eggs and Ham,Dr. Seuss,"August 12, 1960",792341,28,🐭
+rabbit,62,18,0.2903225806451613,Goodnight Moon,Margaret Wise Brown,"September 3, 1947",379039,33,🐇
+bear,50,14,0.28,"Winnie-the-Pooh (Winnie-the-Pooh, #1)",A.A. Milne,"October 14, 1926",377881,32,🐻
+monkey,14,3,0.21428571428571427,Curious George,H.A. Rey,"January 1, 1941",137375,10,🐒
+dog,33,7,0.21212121212121213,How the Grinch Stole Christmas!,Dr. Seuss,"October 12, 1957",420953,27,🐶
+elephant,16,3,0.1875,Horton Hears a Who!,Dr. Seuss,"January 1, 1954",110590,11,🐘
+fox,18,2,0.1111111111111111,The Little Prince,Antoine de Saint-Exupéry,"April 6, 1943",2177997,18,🦊
+wolf,10,1,0.1,The True Story of the 3 Little Pigs,Jon Scieszka,"October 1, 1989",192544,10,🐺
+frog,15,1,0.06666666666666667,"Brown Bear, Brown Bear, What Do You See?",Bill Martin Jr.,"January 1, 1967",184033,13,🐸
