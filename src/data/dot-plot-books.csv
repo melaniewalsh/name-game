@@ -1,4 +1,4 @@
-animal_group,total_count,she_count,proportion_female,title,author,pub_date,num_ratings,book_count,emoji
+animal,total_count,she_count,proportion_female,title,author,pub_date,num_ratings,book_count,emoji
 bird,24,15,0.625,Are You My Mother?,P.D. Eastman,"June 12, 1960",245845,16,🐦
 duck,14,8,0.5714285714285714,"Brown Bear, Brown Bear, What Do You See?",Bill Martin Jr.,"January 1, 1967",184033,11,🦆
 cat,35,19,0.5428571428571428,"The Cat in the Hat (The Cat in the Hat, #1)",Dr. Seuss,"March 12, 1957",551237,29,🐱

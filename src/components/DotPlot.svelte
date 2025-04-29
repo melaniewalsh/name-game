@@ -1,11 +1,15 @@
 <script>
 	import booksData from "$data/dot-plot-books.csv";
+	import surveyData from "$data/dot-plot-survey.csv";
+	import chatData from "$data/dot-plot-chat.csv";
 	import { scaleLinear } from "d3-scale";
 
 	const { id, title, sub } = $props();
 
 	let dataOptions = {
-		books: booksData
+		books: booksData,
+		survey: surveyData,
+		chat: chatData
 	};
 
 	let data = dataOptions[id];
@@ -40,7 +44,7 @@
 
 <figure id={`dot-plot-${id}`}>
 	<h3>{title}</h3>
-	<h4>{sub}</h4>
+	{#if sub}<h4>{sub}</h4>{/if}
 
 	<div
 		class="chart-container"
@@ -58,7 +62,7 @@
 							y2={yScale(i)}
 							stroke="var(--color-gray-200)"
 						/>
-						<text x="-20" y={yScale(i)}>{d.animal_group}</text>
+						<text x="-20" y={yScale(i)}>{d.animal}</text>
 					{/each}
 				</g>
 
