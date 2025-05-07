@@ -1,5 +1,5 @@
 <script>
-	import { getContext } from "svelte";
+	import { getContext, onMount } from "svelte";
 	import CMS from "$components/helpers/CMS.svelte";
 	import Hero from "$components/Hero.svelte";
 	import Footer from "$components/Footer.svelte";
@@ -8,12 +8,17 @@
 	import Figure from "$components/Figure.svelte";
 	import DotPlot from "$components/DotPlot.svelte";
 	import Examples from "$components/Examples.svelte";
+	import { register } from "swiper/element/bundle";
 
 	const copy = getContext("copy");
 	const { body } = copy;
 	const { title, description, byline } = copy.meta;
 	const components = { Ul, Details, Figure, DotPlot, Examples };
 	// const data = getContext("data");
+
+	onMount(() => {
+		register();
+	});
 </script>
 
 <article>

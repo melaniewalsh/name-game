@@ -23,7 +23,6 @@
 	};
 
 	let selectedAnimal = $state("bird");
-	$inspect({ selectedAnimal });
 
 	const emojiClicked = (e) => {
 		selectedAnimal = e.target.id;

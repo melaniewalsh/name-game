@@ -12,7 +12,7 @@
 </script>
 
 <figure class="examples" style={`--gap: ${gap}px; --n: ${examples.length}`}>
-	<!-- <div class="pre">{@html pre}</div> -->
+	<div class="pre">{@html pre}</div>
 
 	<div class="quotes">
 		{#each examples as example}
@@ -41,11 +41,17 @@
 		margin: 3rem auto 4rem auto;
 	}
 
+	.pre {
+		font-style: italic;
+		text-align: center;
+	}
+
 	.quotes {
 		position: relative;
+		min-height: 300px;
 		width: 100%;
-		max-width: 550px;
-		min-height: calc(345px + var(--gap) * (var(--n) - 1));
+		max-width: 600px;
+		margin: 2rem auto 3rem auto;
 	}
 
 	figcaption {
@@ -63,17 +69,21 @@
 		border: 4px solid var(--color-gray-600);
 		padding: 4rem 2rem;
 		font-style: italic;
-		font-size: var(--28px);
+		font-size: var(--24px);
 		font-family: var(--mono);
 		transition:
 			transform 0.3s,
 			top 0.3s,
 			background-color 0.3s;
-		height: 345px;
+		height: 100%;
 	}
 
 	blockquote.highlight {
 		background: var(--color-gray-300);
+	}
+
+	blockquote span {
+		box-sizing: border-box;
 	}
 
 	button {
