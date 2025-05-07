@@ -1,22 +1,36 @@
 <script>
-	let { examples, caption } = $props();
+	let { examples, caption, pre } = $props();
 
-	const cardW = 400;
-	const cardH = 300;
-	const gap = 10;
+	const gap = 32;
+
+	let ordered = $state(examples);
+
+	const onClick = () => {
+		const first = ordered.shift();
+		ordered.push(first);
+	};
 </script>
 
-<figure
-	class="examples"
-	style={`--card-width: ${cardW}px; --card-height: ${cardH}px; --gap: ${gap}px; --n: ${examples.length}`}
->
-	{#each examples as example, i}
-		<div class="example" style:top={`${i * gap}px`} style:left={`${i * gap}px`}>
-			"{@html example}"
-		</div>
-	{/each}
+<figure class="examples" style={`--gap: ${gap}px; --n: ${examples.length}`}>
+	<!-- <div class="pre">{@html pre}</div> -->
 
-	<figcaption>{@html caption}</figcaption>
+	<div class="quotes">
+		{#each examples as example}
+			{@const index = ordered.indexOf(example)}
+			<blockquote
+				class="example"
+				class:highlight={index === 0}
+				style:top={`${index * gap}px`}
+				style:z-index={ordered.length - index}
+				style:transform={`scale(${1 - index * 0.1})`}
+			>
+				<span>"{@html example}"</span>
+			</blockquote>
+		{/each}
+	</div>
+
+	<button onclick={onClick}>another example</button>
+	<figcaption class="sr-only">{@html caption}</figcaption>
 </figure>
 
 <style>
@@ -24,31 +38,46 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		position: relative;
-		width: var(--card-width);
-		height: calc(var(--card-height) + ((var(--n) - 1) * var(--gap)));
 		margin: 3rem auto 4rem auto;
 	}
 
-	figcaption {
-		position: absolute;
-		top: 100%;
-		transform: translate(0, 6px);
-		font-size: var(--12px);
-		color: var(--color-gray-800);
+	.quotes {
+		position: relative;
+		width: 100%;
+		max-width: 550px;
+		min-height: calc(345px + var(--gap) * (var(--n) - 1));
 	}
 
-	.example {
+	figcaption {
+		font-size: var(--12px);
+		color: var(--color-gray-800);
+		margin: 1rem 0;
+	}
+
+	blockquote {
 		position: absolute;
 		display: flex;
+		justify-content: center;
 		align-items: center;
-		background: var(--color-gray-50);
-		border: 2px solid var(--color-gray-600);
-		padding: 1rem;
-		width: var(--card-width);
-		height: var(--card-height);
+		background-color: var(--color-gray-50);
+		border: 4px solid var(--color-gray-600);
+		padding: 4rem 2rem;
 		font-style: italic;
-		font-size: var(--18px);
+		font-size: var(--28px);
 		font-family: var(--mono);
+		transition:
+			transform 0.3s,
+			top 0.3s,
+			background-color 0.3s;
+		height: 345px;
+	}
+
+	blockquote.highlight {
+		background: var(--color-gray-300);
+	}
+
+	button {
+		text-transform: uppercase;
+		font-size: var(--14px);
 	}
 </style>

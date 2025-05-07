@@ -1,4 +1,5 @@
 <script>
+	import Shelf from "$components/Shelf.svelte";
 	import booksData from "$data/dot-plot-books.csv";
 	import surveyData from "$data/dot-plot-survey.csv";
 	import chatData from "$data/dot-plot-chat.csv";
@@ -20,6 +21,17 @@
 		bottom: 10,
 		left: 80
 	};
+
+	let selectedAnimal = $state("bird");
+	$inspect({ selectedAnimal });
+
+	const emojiClicked = (e) => {
+		selectedAnimal = e.target.id;
+	};
+
+	// let shelfData = $derived(
+	// 	() => data.filter((d) => d.animal === selectedAnimal)
+	// );
 
 	let svgWidth = $state(0);
 	let svgHeight = $state(0);
@@ -89,7 +101,13 @@
 
 				<g class="animals">
 					{#each data as d, i}
-						<text x={xScale(xGet(d))} y={yScale(i)}>
+						<text
+							id={d.animal}
+							x={xScale(xGet(d))}
+							y={yScale(i)}
+							onclick={emojiClicked}
+							class:selected-animal={d.animal === selectedAnimal}
+						>
 							{d.emoji}
 						</text>
 					{/each}
@@ -98,6 +116,46 @@
 		</svg>
 	</div>
 </figure>
+
+{#if id === "books"}
+	<Shelf
+		animal={"cat"}
+		books={[
+			{
+				title: "The Cat and the Hat",
+				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
+			},
+			{
+				title: "The Rat in the Hat",
+				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
+			},
+			{
+				title: "The Bat in the Hat",
+				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
+			},
+			{
+				title: "The Bat in the Hat",
+				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
+			},
+			{
+				title: "The Bat in the Hat",
+				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
+			},
+			{
+				title: "The Bat in the Hat",
+				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
+			},
+			{
+				title: "The Bat in the Hat",
+				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
+			},
+			{
+				title: "The Bat in the Hat",
+				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
+			}
+		]}
+	/>
+{/if}
 
 <style>
 	.chart-container {
@@ -143,5 +201,9 @@
 		font-size: var(--24px);
 		text-anchor: middle;
 		dominant-baseline: middle;
+	}
+
+	text.selected-animal {
+		font-size: var(--40px);
 	}
 </style>
