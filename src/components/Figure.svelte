@@ -1,6 +1,7 @@
 <script>
 	const { figures } = $props();
 
+	let swiperEl = $state();
 	let active = $state(0);
 	let currentCaption = $derived(figures[active]?.caption);
 
@@ -8,10 +9,17 @@
 		const [swiper] = e.detail;
 		active = swiper.activeIndex;
 	};
+
+	const onClick = (index) => {
+		if (swiperEl) {
+			swiperEl.swiper.slideTo(index);
+		}
+	};
 </script>
 
 <figure>
 	<swiper-container
+		bind:this={swiperEl}
 		effect="coverflow"
 		coverflowEffect={{ scale: 0.75, stretch: 50 }}
 		speed={500}
@@ -20,8 +28,8 @@
 		auto-height={true}
 		onswiperslidechange={onSlideChange}
 	>
-		{#each figures as { src, alt, caption }}
-			<swiper-slide>
+		{#each figures as { src, alt, caption }, i}
+			<swiper-slide onclick={() => onClick(i)}>
 				<img {src} {alt} />
 			</swiper-slide>
 		{/each}
@@ -42,6 +50,10 @@
 	swiper-slide {
 		width: fit-content;
 		pointer-events: auto;
+	}
+
+	swiper-slide:hover {
+		cursor: pointer;
 	}
 
 	figure {
