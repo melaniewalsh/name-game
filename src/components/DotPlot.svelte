@@ -12,14 +12,14 @@
 
 	// Sort by ratings and select unique books
 	let shelfData = $derived(
-	Array.from(
-		new Map(
-		animalBooksData
-			.filter((d) => d.animal_group === selectedAnimal)
-			.sort((a, b) => Number(b.num_ratings) - Number(a.num_ratings))
-			.map((book) => [book.title, book])  
-		).values()
-	)
+		Array.from(
+			new Map(
+				animalBooksData
+					.filter((d) => d.animal_group === selectedAnimal)
+					.sort((a, b) => Number(b.num_ratings) - Number(a.num_ratings))
+					.map((book) => [book.title, book])
+			).values()
+		)
 	);
 
 	const margin = {
@@ -107,12 +107,23 @@
 
 				<g class="animals">
 					{#each data as d, i}
+						<circle
+							cx={xScale(xGet(d))}
+							cy={yScale(i) - 2}
+							r="20"
+							stroke="var(--color-gray-600)"
+							stroke-width="2"
+							fill="none"
+							class="highlight"
+							class:visible={d.animal === selectedAnimal}
+						/>
+
 						<text
 							id={d.animal}
 							x={xScale(xGet(d))}
 							y={yScale(i)}
 							onclick={emojiClicked}
-							class:selected-animal={d.animal === selectedAnimal}
+							class:faded={d.animal !== selectedAnimal}
 						>
 							{d.emoji}
 						</text>
@@ -124,7 +135,7 @@
 </figure>
 
 {#if id === "books"}
-	<Shelf animal={selectedAnimal} books={shelfData}/>
+	<Shelf animal={selectedAnimal} books={shelfData} />
 {/if}
 
 <style>
@@ -172,10 +183,19 @@
 		text-anchor: middle;
 		dominant-baseline: middle;
 		cursor: pointer;
-
+		transition: opacity calc(var(--1s) * 0.2) ease-in-out;
 	}
 
-	text.selected-animal {
-		font-size: var(--40px);
+	.animals text.faded {
+		opacity: 0.7;
+	}
+
+	circle.highlight {
+		opacity: 0;
+		transition: opacity calc(var(--1s) * 0.2) ease-in-out;
+	}
+
+	circle.highlight.visible {
+		opacity: 1;
 	}
 </style>
