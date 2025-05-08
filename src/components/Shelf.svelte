@@ -1,11 +1,13 @@
 <script>
 	let { animal, books } = $props();
+
+	$inspect(books[0]);
 </script>
 
 <div class="books">
-	{#each books as book}
+	{#each books.slice(0, 8) as book}
 		<div class="book">
-			<img src={book.imageUrl} />
+			<img src={book.book_cover_image} />
 			<div class="title">{book.title}</div>
 		</div>
 	{/each}
@@ -16,11 +18,18 @@
 		width: 120px;
 	}
 
-	.title {
-		font-size: var(--14px);
-	}
-
 	.books {
 		display: flex;
+	}
+
+	.title {
+		font-size: var(--14px);
+		text-align: center;
+	}
+
+	.book {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 	}
 </style>

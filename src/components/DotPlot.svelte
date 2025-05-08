@@ -4,16 +4,14 @@
 	import surveyData from "$data/dot-plot-survey.csv";
 	import chatData from "$data/dot-plot-chat.csv";
 	import { scaleLinear } from "d3-scale";
+	import animalBooksData from "$data/books.csv";
 
 	const { id, title, sub } = $props();
 
-	let dataOptions = {
-		books: booksData,
-		survey: surveyData,
-		chat: chatData
-	};
-
-	let data = dataOptions[id];
+	let selectedAnimal = $state("bird");
+	let shelfData = $derived(
+		animalBooksData.filter((d) => d.animal_group === selectedAnimal)
+	);
 
 	const margin = {
 		top: 40,
@@ -22,21 +20,17 @@
 		left: 80
 	};
 
-	let selectedAnimal = $state("bird");
-
-	const emojiClicked = (e) => {
-		selectedAnimal = e.target.id;
-	};
-
-	// let shelfData = $derived(
-	// 	() => data.filter((d) => d.animal === selectedAnimal)
-	// );
-
 	let svgWidth = $state(0);
 	let svgHeight = $state(0);
 	let chartWidth = $derived(svgWidth - margin.right - margin.left);
 	let chartHeight = $derived(svgHeight - margin.top - margin.bottom);
 
+	const dataOptions = {
+		books: booksData,
+		survey: surveyData,
+		chat: chatData
+	};
+	const data = dataOptions[id];
 	const xScale = $derived(
 		scaleLinear().domain([0, 100]).range([0, chartWidth])
 	);
@@ -51,6 +45,10 @@
 	const yScale = $derived(
 		scaleLinear().domain([0, data.length]).range([0, chartHeight])
 	);
+
+	const emojiClicked = (e) => {
+		selectedAnimal = e.target.id;
+	};
 </script>
 
 <figure id={`dot-plot-${id}`}>
@@ -117,43 +115,7 @@
 </figure>
 
 {#if id === "books"}
-	<Shelf
-		animal={"cat"}
-		books={[
-			{
-				title: "The Cat and the Hat",
-				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
-			},
-			{
-				title: "The Rat in the Hat",
-				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
-			},
-			{
-				title: "The Bat in the Hat",
-				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
-			},
-			{
-				title: "The Bat in the Hat",
-				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
-			},
-			{
-				title: "The Bat in the Hat",
-				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
-			},
-			{
-				title: "The Bat in the Hat",
-				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
-			},
-			{
-				title: "The Bat in the Hat",
-				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
-			},
-			{
-				title: "The Bat in the Hat",
-				imageUrl: "assets/images/ifyougiveamouseacookie.jpg"
-			}
-		]}
-	/>
+	<Shelf animal={selectedAnimal} books={shelfData} />
 {/if}
 
 <style>
