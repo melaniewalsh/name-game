@@ -1,18 +1,17 @@
 <script>
+	import Shelf from "$components/Shelf.svelte";
 	import booksData from "$data/dot-plot-books.csv";
 	import surveyData from "$data/dot-plot-survey.csv";
 	import chatData from "$data/dot-plot-chat.csv";
 	import { scaleLinear } from "d3-scale";
+	import animalBooksData from "$data/books.csv";
 
 	const { id, title, sub } = $props();
 
-	let dataOptions = {
-		books: booksData,
-		survey: surveyData,
-		chat: chatData
-	};
-
-	let data = dataOptions[id];
+	let selectedAnimal = $state("bird");
+	let shelfData = $derived(
+		animalBooksData.filter((d) => d.animal_group === selectedAnimal)
+	);
 
 	const margin = {
 		top: 40,
@@ -26,6 +25,12 @@
 	let chartWidth = $derived(svgWidth - margin.right - margin.left);
 	let chartHeight = $derived(svgHeight - margin.top - margin.bottom);
 
+	const dataOptions = {
+		books: booksData,
+		survey: surveyData,
+		chat: chatData
+	};
+	const data = dataOptions[id];
 	const xScale = $derived(
 		scaleLinear().domain([0, 100]).range([0, chartWidth])
 	);
@@ -40,6 +45,10 @@
 	const yScale = $derived(
 		scaleLinear().domain([0, data.length]).range([0, chartHeight])
 	);
+
+	const emojiClicked = (e) => {
+		selectedAnimal = e.target.id;
+	};
 </script>
 
 <figure id={`dot-plot-${id}`}>
@@ -89,7 +98,13 @@
 
 				<g class="animals">
 					{#each data as d, i}
-						<text x={xScale(xGet(d))} y={yScale(i)}>
+						<text
+							id={d.animal}
+							x={xScale(xGet(d))}
+							y={yScale(i)}
+							onclick={emojiClicked}
+							class:selected-animal={d.animal === selectedAnimal}
+						>
 							{d.emoji}
 						</text>
 					{/each}
@@ -98,6 +113,10 @@
 		</svg>
 	</div>
 </figure>
+
+{#if id === "books"}
+	<Shelf animal={selectedAnimal} books={shelfData} />
+{/if}
 
 <style>
 	.chart-container {
@@ -143,5 +162,9 @@
 		font-size: var(--24px);
 		text-anchor: middle;
 		dominant-baseline: middle;
+	}
+
+	text.selected-animal {
+		font-size: var(--40px);
 	}
 </style>

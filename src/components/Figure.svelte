@@ -1,32 +1,94 @@
 <script>
-	const { src, alt, caption } = $props();
+	const { figures } = $props();
+
+	let swiperEl = $state();
+	let active = $state(0);
+	let currentCaption = $derived(figures[active]?.caption);
+
+	const onSlideChange = (e) => {
+		const [swiper] = e.detail;
+		active = swiper.activeIndex;
+	};
+
+	const onClick = (index) => {
+		if (swiperEl) {
+			swiperEl.swiper.slideTo(index);
+		}
+	};
 </script>
 
 <figure>
-	<img {src} {alt} />
-	{#if caption}
-		<figcaption>{@html caption}</figcaption>
+	<swiper-container
+		bind:this={swiperEl}
+		effect="coverflow"
+		coverflowEffect={{ scale: 0.75, stretch: 50 }}
+		speed={500}
+		slides-per-view={"auto"}
+		centered-slides={true}
+		auto-height={true}
+		onswiperslidechange={onSlideChange}
+	>
+		{#each figures as { src, alt, caption }, i}
+			<swiper-slide onclick={() => onClick(i)}>
+				<img {src} {alt} />
+			</swiper-slide>
+		{/each}
+	</swiper-container>
+
+	{#if currentCaption}
+		<figcaption>{@html currentCaption}</figcaption>
 	{/if}
 </figure>
 
 <style>
-	figure {
-		display: block;
+	swiper-container {
 		width: 100%;
-		margin: 2em auto;
-		max-width: 20em;
+		overflow: hidden;
+		pointer-events: none;
 	}
 
-	figure img {
-		max-width: 100%;
-		height: auto;
-		box-shadow: 0 0 12px 4px rgba(0, 0, 0, 0.2);
-		border-radius: 8px;
+	swiper-slide {
+		width: fit-content;
+		pointer-events: auto;
+	}
+
+	swiper-slide:hover {
+		cursor: pointer;
+	}
+
+	figure {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 2rem 0;
 	}
 
 	figcaption {
 		font-size: var(--14px);
 		text-align: center;
-		margin-top: 8px;
+		margin-top: 1rem;
+		max-width: 500px;
+	}
+
+	img {
+		height: 500px;
+	}
+
+	:global(.swiper-slide-shadow-left) {
+		background: rgba(91, 99, 75, 0.3);
+		background: linear-gradient(
+			to left,
+			rgba(91, 99, 75, 0),
+			rgba(91, 99, 75, 0.3)
+		);
+	}
+
+	:global(.swiper-slide-shadow-right) {
+		background: rgba(91, 99, 75, 0.3);
+		background: linear-gradient(
+			to left,
+			rgba(91, 99, 75, 0.3),
+			rgba(91, 99, 75, 0)
+		);
 	}
 </style>
