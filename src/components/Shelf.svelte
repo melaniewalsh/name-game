@@ -22,7 +22,7 @@
 	{#each books.slice(0, 5) as book}
 		<div class="book">
 			<a href={book.goodreads_link} target="_blank"><img src={book.book_cover_image} /></a>
-			<div class="title">{book.title}</div>
+			<div class="title">{book.title} ({book.pub_year})</div>
 			<div class="author">By {book.author}</div>
 			<div class="num_ratings">{formatRatings(book.num_ratings)} ratings</div>
 		</div>
