@@ -22,6 +22,7 @@
 	)
 	);
 
+
 	const margin = {
 		top: 40,
 		right: 45,
@@ -124,7 +125,7 @@
 </figure>
 
 {#if id === "books"}
-	<Shelf animal={selectedAnimal} books={shelfData} />
+	<Shelf animal={selectedAnimal} books={shelfData}/>
 {/if}
 
 <style>
@@ -171,6 +172,8 @@
 		font-size: var(--24px);
 		text-anchor: middle;
 		dominant-baseline: middle;
+		cursor: pointer;
+
 	}
 
 	text.selected-animal {
