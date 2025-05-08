@@ -22,7 +22,7 @@
 	};
 
 	const resetSwiper = () => {
-		if (swiperEl) swiperEl.swiper.slideTo(0);
+		if (swiperEl && swiperEl.swiper) swiperEl.swiper.slideTo(0);
 	};
 
 	$effect(() => resetSwiper(animal));

@@ -3,14 +3,28 @@
 	import booksData from "$data/dot-plot-books.csv";
 	import surveyData from "$data/dot-plot-survey.csv";
 	import chatData from "$data/dot-plot-chat.csv";
+	import allData from "$data/dot-plot-all.csv";
 	import { scaleLinear } from "d3-scale";
 	import animalBooksData from "$data/top-books.csv";
 
 	const { id, title, sub } = $props();
 
-	let selectedAnimal = $state("bird");
+	const dataOptions = {
+		books: booksData,
+		survey: surveyData,
+		chat: chatData,
+		all: allData
+	};
+	const data = dataOptions[id];
+	const margin = {
+		top: 40,
+		right: 45,
+		bottom: 10,
+		left: 80
+	};
+	let oneLine = id === "all";
 
-	// Sort by ratings and select unique books
+	let selectedAnimal = $state(data[0].animal);
 	let shelfData = $derived(
 		Array.from(
 			new Map(
@@ -21,25 +35,11 @@
 			).values()
 		)
 	);
-
-	const margin = {
-		top: 40,
-		right: 45,
-		bottom: 10,
-		left: 80
-	};
-
 	let svgWidth = $state(0);
 	let svgHeight = $state(0);
 	let chartWidth = $derived(svgWidth - margin.right - margin.left);
 	let chartHeight = $derived(svgHeight - margin.top - margin.bottom);
 
-	const dataOptions = {
-		books: booksData,
-		survey: surveyData,
-		chat: chatData
-	};
-	const data = dataOptions[id];
 	const xScale = $derived(
 		scaleLinear().domain([0, 100]).range([0, chartWidth])
 	);
@@ -52,7 +52,9 @@
 		"100% she/her"
 	];
 	const yScale = $derived(
-		scaleLinear().domain([0, data.length]).range([0, chartHeight])
+		scaleLinear()
+			.domain(oneLine ? [0, 1] : [0, data.length])
+			.range([0, chartHeight])
 	);
 
 	const emojiClicked = (e) => {
@@ -66,6 +68,7 @@
 
 	<div
 		class="chart-container"
+		class:one-line={oneLine}
 		bind:clientWidth={svgWidth}
 		bind:clientHeight={svgHeight}
 	>
@@ -73,13 +76,15 @@
 			<g transform={`translate(${margin.left}, ${margin.top})`}>
 				<g class="y-axis">
 					{#each data as d, i}
-						<line
-							x1="-15"
-							y1={yScale(i)}
-							x2={chartWidth + 15}
-							y2={yScale(i)}
-							stroke="var(--color-gray-200)"
-						/>
+						{#if !oneLine}
+							<line
+								x1="-15"
+								y1={yScale(i)}
+								x2={chartWidth + 15}
+								y2={yScale(i)}
+								stroke="var(--color-gray-200)"
+							/>
+						{/if}
 						<text x="-20" y={yScale(i)}>{d.animal}</text>
 					{/each}
 				</g>
@@ -107,23 +112,25 @@
 
 				<g class="animals">
 					{#each data as d, i}
-						<circle
-							cx={xScale(xGet(d))}
-							cy={yScale(i) - 2}
-							r="20"
-							stroke="var(--color-gray-600)"
-							stroke-width="2"
-							fill="none"
-							class="highlight"
-							class:visible={d.animal === selectedAnimal}
-						/>
+						{#if !oneLine}
+							<circle
+								cx={xScale(xGet(d))}
+								cy={yScale(i) - 2}
+								r="20"
+								stroke="var(--color-gray-600)"
+								stroke-width="2"
+								fill="none"
+								class="highlight"
+								class:visible={d.animal === selectedAnimal}
+							/>
+						{/if}
 
 						<text
 							id={d.animal}
 							x={xScale(xGet(d))}
-							y={yScale(i)}
+							y={oneLine ? yScale(0.5) : yScale(i)}
 							onclick={emojiClicked}
-							class:faded={d.animal !== selectedAnimal}
+							class:faded={d.animal !== selectedAnimal && !oneLine}
 						>
 							{d.emoji}
 						</text>
@@ -139,11 +146,18 @@
 {/if}
 
 <style>
+	figure {
+		margin: 3rem 0;
+	}
 	.chart-container {
 		display: flex;
 		flex-direction: column;
 		gap: 2rem;
 		height: 400px;
+	}
+
+	.chart-container.one-line {
+		height: 175px;
 	}
 
 	h3 {
