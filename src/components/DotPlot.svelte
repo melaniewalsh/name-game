@@ -4,13 +4,22 @@
 	import surveyData from "$data/dot-plot-survey.csv";
 	import chatData from "$data/dot-plot-chat.csv";
 	import { scaleLinear } from "d3-scale";
-	import animalBooksData from "$data/books.csv";
+	import animalBooksData from "$data/top-books.csv";
 
 	const { id, title, sub } = $props();
 
 	let selectedAnimal = $state("bird");
+
+	// Sort by ratings and select unique books
 	let shelfData = $derived(
-		animalBooksData.filter((d) => d.animal_group === selectedAnimal)
+	Array.from(
+		new Map(
+		animalBooksData
+			.filter((d) => d.animal_group === selectedAnimal)
+			.sort((a, b) => Number(b.num_ratings) - Number(a.num_ratings))
+			.map((book) => [book.title, book])  
+		).values()
+	)
 	);
 
 	const margin = {
