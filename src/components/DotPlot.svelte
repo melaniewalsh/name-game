@@ -22,7 +22,6 @@
 	)
 	);
 
-
 	const margin = {
 		top: 40,
 		right: 45,
