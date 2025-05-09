@@ -3,7 +3,7 @@
 
 	let { animal, books } = $props();
 
-	const n = 8;
+	const n = 12;
 	let swiperEl = $state();
 	let selectedDecade = $state("All");
 
