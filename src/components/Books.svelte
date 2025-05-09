@@ -15,6 +15,12 @@
 			swiperEl.swiper.slideTo(index);
 		}
 	};
+
+	const onKeyDown = (e, index) => {
+		if (e.key === "Enter") {
+			onClick(index);
+		}
+	};
 </script>
 
 <figure>
@@ -29,7 +35,12 @@
 		onswiperslidechange={onSlideChange}
 	>
 		{#each figures as { src, alt, caption }, i}
-			<swiper-slide onclick={() => onClick(i)}>
+			<swiper-slide
+				onclick={() => onClick(i)}
+				onkeydown={(e) => onKeyDown(e, i)}
+				tabindex="0"
+				role="button"
+			>
 				<img {src} {alt} />
 			</swiper-slide>
 		{/each}
@@ -66,7 +77,6 @@
 	figcaption {
 		font-size: var(--14px);
 		text-align: center;
-		margin-top: 1rem;
 		max-width: 500px;
 	}
 

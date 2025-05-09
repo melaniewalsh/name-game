@@ -60,7 +60,14 @@
 	);
 
 	const emojiClicked = (e) => {
+		if (id !== "books") return;
 		selectedAnimal = e.target.id;
+	};
+
+	const onKeyDown = (e) => {
+		if (e.key === "Enter") {
+			emojiClicked(e);
+		}
 	};
 </script>
 
@@ -127,12 +134,17 @@
 							/>
 						{/if}
 
+						<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 						<text
 							id={d.animal}
 							x={xScale(xGet(d))}
 							y={oneLine ? yScale(0.5) : yScale(i)}
-							onclick={emojiClicked}
 							class:faded={d.animal !== selectedAnimal && id === "books"}
+							onclick={emojiClicked}
+							onkeydown={onKeyDown}
+							tabindex={id === "books" ? 0 : -1}
+							role={id === "books" ? "button" : undefined}
+							aria-label={`Select ${d.animal}`}
 						>
 							{d.emoji}
 						</text>
