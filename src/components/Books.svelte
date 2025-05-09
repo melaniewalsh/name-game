@@ -91,4 +91,10 @@
 			rgba(91, 99, 75, 0)
 		);
 	}
+
+	@media (max-width: 600px) {
+		img {
+			height: 300px;
+		}
+	}
 </style>

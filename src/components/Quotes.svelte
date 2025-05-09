@@ -48,7 +48,7 @@
 
 	.quotes {
 		position: relative;
-		min-height: 300px;
+		height: 300px;
 		width: 100%;
 		max-width: 600px;
 		margin: 2rem auto 3rem auto;
@@ -84,10 +84,32 @@
 
 	blockquote span {
 		box-sizing: border-box;
+		line-height: 1.2;
 	}
 
 	button {
 		text-transform: uppercase;
 		font-size: var(--14px);
+	}
+
+	@media (max-width: 600px) {
+		figure {
+			margin: 2rem auto 3rem auto;
+		}
+
+		.quotes {
+			height: 240px;
+		}
+
+		blockquote {
+			font-size: var(--18px);
+			padding: 2rem 1rem;
+		}
+	}
+
+	@media (max-width: 400px) {
+		.quotes {
+			height: 300px;
+		}
 	}
 </style>

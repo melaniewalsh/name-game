@@ -16,13 +16,14 @@
 		all: allData
 	};
 	const data = dataOptions[id];
+
+	let oneLine = id === "all";
 	const margin = {
 		top: 40,
 		right: 45,
 		bottom: 10,
-		left: 80
+		left: oneLine ? 45 : 80
 	};
-	let oneLine = id === "all";
 
 	let selectedAnimal = $state(data[0].animal);
 	let shelfData = $derived(
@@ -35,6 +36,7 @@
 			).values()
 		)
 	);
+
 	let svgWidth = $state(0);
 	let svgHeight = $state(0);
 	let chartWidth = $derived(svgWidth - margin.right - margin.left);
@@ -112,11 +114,11 @@
 
 				<g class="animals">
 					{#each data as d, i}
-						{#if !oneLine}
+						{#if id === "books"}
 							<circle
 								cx={xScale(xGet(d))}
 								cy={yScale(i) - 2}
-								r="20"
+								r="18"
 								stroke="var(--color-gray-600)"
 								stroke-width="2"
 								fill="none"
@@ -130,7 +132,7 @@
 							x={xScale(xGet(d))}
 							y={oneLine ? yScale(0.5) : yScale(i)}
 							onclick={emojiClicked}
-							class:faded={d.animal !== selectedAnimal && !oneLine}
+							class:faded={d.animal !== selectedAnimal && id === "books"}
 						>
 							{d.emoji}
 						</text>
@@ -149,6 +151,7 @@
 	figure {
 		margin: 3rem 0;
 	}
+
 	.chart-container {
 		display: flex;
 		flex-direction: column;
@@ -211,5 +214,38 @@
 
 	circle.highlight.visible {
 		opacity: 1;
+	}
+
+	@media (max-width: 600px) {
+		figure {
+			margin: 2rem 0;
+		}
+
+		h3 {
+			font-size: var(--20px);
+		}
+
+		h4 {
+			font-size: var(--12px);
+		}
+
+		.x-axis text:nth-of-type(2),
+		.x-axis text:nth-of-type(4) {
+			display: none;
+		}
+
+		.chart-container {
+			height: 350px;
+		}
+
+		.chart-container.one-line {
+			height: 150px;
+		}
+	}
+
+	@media (max-width: 400px) {
+		h3 {
+			font-size: var(--18px);
+		}
 	}
 </style>

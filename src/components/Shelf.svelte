@@ -111,4 +111,14 @@
 		font-size: var(--12px);
 		color: var(--color-gray-700);
 	}
+
+	@media (max-width: 600px) {
+		.shelf-title {
+			font-size: var(--16px);
+		}
+
+		a {
+			height: 120px;
+		}
+	}
 </style>
