@@ -13,14 +13,6 @@
 			.slice(0, n)
 	);
 
-	const formatRatings = (num) => {
-		num = Number(num);
-		if (num >= 1_000_000)
-			return (num / 1_000_000).toFixed(1).replace(/\.0$/, "") + "m";
-		if (num >= 1_000) return (num / 1_000).toFixed(1).replace(/\.0$/, "") + "k";
-		return num;
-	};
-
 	const resetSwiper = () => {
 		if (swiperEl && swiperEl.swiper) swiperEl.swiper.slideTo(0);
 	};
@@ -48,31 +40,29 @@
 						style:background-image={`url(${book.book_cover_image})`}
 					></div>
 				</a>
-				<strong class="title">{book.title} ({book.pub_year})</strong>
+
+				<!-- <strong class="title">{book.title} ({book.pub_year})</strong> -->
+
 				<div class="characters">
 					<div class="bar">
 						{#each Object.entries(book.characters) as [pronoun, count]}
-							<div
-								class={_.kebabCase(pronoun)}
-								style:width={`${(count / numAnimals) * 100}%`}
-							/>
+							{@const percent = (count / numAnimals) * 100}
+							{#if percent > 0}
+								<div class={_.kebabCase(pronoun)} style:width={`${percent}%`}>
+									<div class="label">
+										<strong
+											>{pronoun === "[animal name]"
+												? "animal name"
+												: pronoun}</strong
+										>
+										<span>{count} {animal}{count > 1 ? "s" : ""}</span>
+									</div>
+								</div>
+							{/if}
 						{/each}
 					</div>
-
-					<div>
-						{numAnimals}
-						{animal}{numAnimals > 1 ? "s" : ""}:
-					</div>
-					<ul>
-						{#each Object.entries(book.characters) as [pronoun, count]}
-							<li>
-								{count}
-								{pronoun}
-							</li>
-						{/each}
-					</ul>
-				</div>
-			</swiper-slide>
+				</div></swiper-slide
+			>
 		{/each}
 	</swiper-container>
 	<button onclick={() => swiperEl.swiper.slideNext()}>{">"}</button>
@@ -87,7 +77,7 @@
 	}
 
 	.characters {
-		width: 100%;
+		width: 100px;
 		font-size: var(--14px);
 	}
 
@@ -95,11 +85,28 @@
 		display: flex;
 		width: 100%;
 		height: 10px;
-		margin-top: 0.5rem;
+		margin-top: 2.25rem;
 	}
 
 	.bar div {
+		position: relative;
 		height: 100%;
+	}
+
+	.label {
+		position: absolute;
+		display: flex;
+		flex-direction: column;
+		top: 0;
+		line-height: 1;
+		transform: translateY(calc(-100% - 1rem));
+		left: 0;
+		font-size: var(--12px);
+	}
+
+	.label strong,
+	.label span {
+		white-space: nowrap;
 	}
 
 	.she-her {
@@ -170,9 +177,9 @@
 	}
 
 	.title {
+		width: 100px;
 		font-size: var(--14px);
 		text-align: center;
-		width: 120px;
 	}
 
 	@media (max-width: 600px) {
