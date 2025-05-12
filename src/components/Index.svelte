@@ -6,6 +6,7 @@
 	import Ul from "$components/Ul.svelte";
 	import Details from "$components/Details.svelte";
 	import Books from "$components/Books.svelte";
+	import Figure from "$components/Figure.svelte";
 	import DotPlot from "$components/DotPlot.svelte";
 	import Quotes from "$components/Quotes.svelte";
 	import { register } from "swiper/element/bundle";
@@ -13,7 +14,7 @@
 	const copy = getContext("copy");
 	const { body } = copy;
 	const { title, description, byline } = copy.meta;
-	const components = { Ul, Details, Books, DotPlot, Quotes };
+	const components = { Ul, Details, Books, DotPlot, Quotes, Figure };
 	// const data = getContext("data");
 
 	onMount(() => {
