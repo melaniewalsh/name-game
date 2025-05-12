@@ -27,14 +27,28 @@
 
 	let selectedAnimal = $state(data[0].animal);
 	let shelfData = $derived(
-		Array.from(
-			new Map(
-				animalBooksData
-					.filter((d) => d.animal_group === selectedAnimal)
-					.sort((a, b) => Number(b.num_ratings) - Number(a.num_ratings))
-					.map((book) => [book.title, book])
-			).values()
-		)
+		id === "books"
+			? Array.from(
+					new Map(
+						animalBooksData
+							.filter((d) => d.animal_group === selectedAnimal)
+							.sort((a, b) => Number(b.num_ratings) - Number(a.num_ratings))
+							.map((book) => [book.title, book])
+					).values()
+				).map((d) => {
+					let characters = animalBooksData.filter(
+						(b) => b.title === d.title && b.animal_group === selectedAnimal
+					);
+					let groupedByPronoun = characters.reduce((acc, c) => {
+						acc[c.pronoun] = (acc[c.pronoun] || 0) + 1;
+						return acc;
+					}, {});
+					return {
+						...d,
+						characters: groupedByPronoun
+					};
+				})
+			: []
 	);
 
 	let svgWidth = $state(0);

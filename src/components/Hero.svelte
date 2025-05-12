@@ -5,5 +5,5 @@
 <section id="hero">
 	<h1>{title}</h1>
 	<p>{description}</p>
-	<p class="byline">{byline}</p>
+	<p class="byline">{@html byline}</p>
 </section>
