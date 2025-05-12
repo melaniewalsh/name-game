@@ -48,7 +48,7 @@
 
 	.quotes {
 		position: relative;
-		height: 300px;
+		height: 480px;
 		width: 100%;
 		max-width: 600px;
 		margin: 2rem auto 3rem auto;
