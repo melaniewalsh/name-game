@@ -16,7 +16,9 @@
 <style>
 	details {
 		padding: var(--16px);
-		background: #eee;
+		background: var(--color-purple);
+		border-radius: var(--border-radius);
+		color: var(--color-gray-50);
 	}
 
 	summary {

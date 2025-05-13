@@ -1,4 +1,6 @@
 <script>
+	import arrowLeft from "$svg/arrow-left.svg";
+	import arrowRight from "$svg/arrow-right.svg";
 	const { examples, pre } = $props();
 
 	const hasImages = examples.every((example) => example.src);
@@ -25,14 +27,21 @@
 	};
 </script>
 
-<figure>
+<figure class="swiper-examples" class:has-images={hasImages}>
+	{#if examples[active]?.title}
+		<h2>{examples[active].title}</h2>
+	{/if}
+
+	{#if examples[active]?.description}
+		<p>{@html examples[active].description}</p>
+	{/if}
 	{#if pre}
 		<div class="pre">{@html pre}</div>
 	{/if}
 
-	<div class="swiper">
+	<div>
 		<button onclick={() => swiperEl.swiper.slidePrev()} disabled={active === 0}
-			>{"<"}</button
+			>{@html arrowLeft}</button
 		>
 
 		<swiper-container
@@ -62,7 +71,9 @@
 						role="button"
 					>
 						<blockquote>
-							{@html example}
+							<span class="inner">
+								{@html example}
+							</span>
 						</blockquote>
 					</swiper-slide>
 				{/if}
@@ -71,7 +82,7 @@
 
 		<button
 			onclick={() => swiperEl.swiper.slideNext()}
-			disabled={active === examples.length - 1}>{">"}</button
+			disabled={active === examples.length - 1}>{@html arrowRight}</button
 		>
 	</div>
 
@@ -81,15 +92,23 @@
 </figure>
 
 <style>
+	.has-images swiper-container {
+		background: var(--color-orange);
+	}
+
 	swiper-container {
 		width: 100%;
 		overflow: hidden;
 		pointer-events: none;
+		background: var(--color-blue);
+		border-radius: 16px;
+		padding: 1em 0;
 	}
 
 	swiper-slide {
 		width: fit-content;
 		pointer-events: auto;
+		padding-bottom: 8px;
 	}
 
 	swiper-slide:hover {
@@ -110,14 +129,19 @@
 	figcaption {
 		font-size: var(--14px);
 		text-align: center;
-		max-width: 500px;
+		max-width: 480px;
+		margin-top: 8px;
+		line-height: 1.2;
 	}
 
 	img {
-		max-height: 500px;
+		max-height: 480px;
+		border: 8px solid var(--color-white);
+		border-radius: var(--border-radius);
+		box-shadow: 0 4px 4px 2px rgba(0, 0, 0, 0.2);
 	}
 
-	.swiper {
+	.swiper-examples div {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -126,12 +150,7 @@
 	}
 
 	blockquote {
-		background-color: var(--color-gray-50);
-		border: 4px solid var(--color-gray-600);
-		padding: 4rem 2rem;
-		font-style: italic;
-		font-size: var(--24px);
-		font-family: var(--mono);
+		padding: 2em;
 	}
 
 	:global(.swiper-slide-shadow-left) {
@@ -150,6 +169,20 @@
 			rgba(91, 99, 75, 0.3),
 			rgba(91, 99, 75, 0)
 		);
+	}
+
+	button {
+		width: 4em;
+	}
+
+	:global(.swiper-examples button svg) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	:global(.swiper-examples button svg path) {
+		fill: var(--color-white);
 	}
 
 	@media (max-width: 600px) {
