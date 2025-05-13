@@ -1,4 +1,6 @@
 <script>
+	import arrowLeft from "$svg/arrow-left.svg";
+	import arrowRight from "$svg/arrow-right.svg";
 	import _ from "lodash";
 
 	let { animal, books } = $props();
@@ -20,12 +22,12 @@
 	$effect(() => resetSwiper(animal));
 </script>
 
-<div class="shelf-title">
-	Most Popular Books featuring {_.startCase(animal)}s
-</div>
+<h4 class="shelf-title">
+	Popular Books with Anthropomorphic {_.startCase(animal)}s
+</h4>
 
-<figure class="books">
-	<button onclick={() => swiperEl.swiper.slidePrev()}>{"<"}</button>
+<figure class="swiper-books">
+	<button onclick={() => swiperEl.swiper.slidePrev()}>{@html arrowLeft}</button>
 	<swiper-container slides-per-view="auto" bind:this={swiperEl}>
 		{#each topBooks as book}
 			{@const numAnimals = Object.values(book.characters).reduce(
@@ -65,7 +67,8 @@
 			>
 		{/each}
 	</swiper-container>
-	<button onclick={() => swiperEl.swiper.slideNext()}>{">"}</button>
+	<button onclick={() => swiperEl.swiper.slideNext()}>{@html arrowRight}</button
+	>
 </figure>
 
 <style>
@@ -136,6 +139,9 @@
 		width: 100%;
 		overflow: hidden;
 		pointer-events: none;
+		background: var(--color-green);
+		border-radius: 16px;
+		padding: 1em 0;
 	}
 
 	swiper-slide {
@@ -170,16 +176,32 @@
 
 	.book-cover {
 		width: 100%;
-		height: 100%;
+		aspect-ratio: 3/4;
 		background-size: cover;
 		background-position: center;
-		border: 2px solid var(--color-gray-600);
+		border: 4px solid var(--color-white);
+		border-radius: var(--border-radius);
+		box-shadow: 0 4px 4px 2px rgba(0, 0, 0, 0.2);
 	}
 
 	.title {
 		width: 100px;
 		font-size: var(--14px);
 		text-align: center;
+	}
+
+	button {
+		width: 2em;
+	}
+
+	:global(.swiper-books button svg) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	:global(.swiper-books button svg) {
+		fill: var(--color-white);
 	}
 
 	@media (max-width: 600px) {
