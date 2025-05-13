@@ -6,6 +6,7 @@
 	import allData from "$data/dot-plot-all.csv";
 	import { scaleLinear } from "d3-scale";
 	import animalBooksData from "$data/top-books.csv";
+	import bearSvg from "$assets/bear.svg";
 
 	const { id, title, sub } = $props();
 
@@ -160,7 +161,7 @@
 							role={id === "books" ? "button" : undefined}
 							aria-label={`Select ${d.animal}`}
 						>
-							{d.emoji}
+							{@html bearSvg}
 						</text>
 					{/each}
 				</g>
