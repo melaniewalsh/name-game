@@ -6,7 +6,7 @@
 	import allData from "$data/dot-plot-all.csv";
 	import { scaleLinear } from "d3-scale";
 	import animalBooksData from "$data/top-books.csv";
-	import bearSvg from "$assets/bear.svg";
+	import bearSvg from "$svg/animals/bear.svg";
 
 	const { id, title, sub } = $props();
 
@@ -17,15 +17,17 @@
 		all: allData
 	};
 	const data = dataOptions[id];
-
-	let oneLine = id === "all";
+	const labelWidth = 60;
 	const margin = {
-		top: 40,
-		right: 45,
-		bottom: 10,
-		left: oneLine ? 45 : 80
+		left: labelWidth + 10,
+		right: 10,
+		top: 0,
+		bottom: 0
 	};
 
+	let oneLine = id === "all";
+	let fullWidth = $state(0);
+	let chartWidth = $derived(fullWidth - margin.left - margin.right);
 	let selectedAnimal = $state(data[0].animal);
 	let shelfData = $derived(
 		id === "books"
@@ -52,11 +54,6 @@
 			: []
 	);
 
-	let svgWidth = $state(0);
-	let svgHeight = $state(0);
-	let chartWidth = $derived(svgWidth - margin.right - margin.left);
-	let chartHeight = $derived(svgHeight - margin.top - margin.bottom);
-
 	const xScale = $derived(
 		scaleLinear().domain([0, 100]).range([0, chartWidth])
 	);
@@ -68,11 +65,6 @@
 		"75% she/her",
 		"100% she/her"
 	];
-	const yScale = $derived(
-		scaleLinear()
-			.domain(oneLine ? [0, 1] : [0, data.length])
-			.range([0, chartHeight])
-	);
 
 	const emojiClicked = (e) => {
 		if (id !== "books") return;
@@ -86,87 +78,66 @@
 	};
 </script>
 
-<figure id={`dot-plot-${id}`}>
+<figure id={`dot-plot-${id}`} class:one-line={oneLine}>
 	<h3>{title}</h3>
 	{#if sub}<h4>{sub}</h4>{/if}
 
 	<div
-		class="chart-container"
-		class:one-line={oneLine}
-		bind:clientWidth={svgWidth}
-		bind:clientHeight={svgHeight}
+		class="arrows"
+		style:margin-left={`${oneLine ? 0 : margin.left}px`}
+		style:width={oneLine ? "100%" : `${chartWidth}px`}
 	>
-		<svg>
-			<g transform={`translate(${margin.left}, ${margin.top})`}>
-				<g class="y-axis">
+		<div>{"<-"} more he/him</div>
+		<div>more she/her {"->"}</div>
+	</div>
+
+	<div class="rows" bind:clientWidth={fullWidth}>
+		{#if oneLine}
+			<div class="row">
+				<div class="line">
 					{#each data as d, i}
-						{#if !oneLine}
-							<line
-								x1="-15"
-								y1={yScale(i)}
-								x2={chartWidth + 15}
-								y2={yScale(i)}
-								stroke="var(--color-gray-200)"
-							/>
-						{/if}
-						<text x="-20" y={yScale(i)}>{d.animal}</text>
+						<div class="animal" style:left={`${xScale(xGet(d))}px`}>
+							{d.emoji}
+						</div>
 					{/each}
-				</g>
-
-				<g class="x-axis">
-					{#each [0, 25, 50, 75, 100] as d, i}
-						<line
-							x1={xScale(d)}
-							y1="-15"
-							x2={xScale(d)}
-							y2={chartHeight - 15}
-							stroke="var(--color-gray-200)"
-							class:equal={d === 50}
-						/>
-						<text x={xScale(d)} y={chartHeight}>{xAxisLabels[i]}</text>
-					{/each}
-
-					<text x={xScale(50) - 15} y={-30} style:text-anchor={"end"}
-						>{"<-"} more he/him</text
-					>
-					<text x={xScale(50) + 15} y={-30} style:text-anchor={"start"}
-						>more she/her {"->"}</text
-					>
-				</g>
-
-				<g class="animals">
-					{#each data as d, i}
-						{#if id === "books"}
-							<circle
-								cx={xScale(xGet(d))}
-								cy={yScale(i) - 2}
-								r="18"
-								stroke="var(--color-gray-600)"
-								stroke-width="2"
-								fill="none"
-								class="highlight"
-								class:visible={d.animal === selectedAnimal}
-							/>
-						{/if}
-
-						<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-						<text
+				</div>
+			</div>
+		{:else}
+			{#each data as d, i}
+				<div class="row">
+					<div class="label" style:width={`${labelWidth}px`}>{d.animal}</div>
+					<div class="line">
+						<div
 							id={d.animal}
-							x={xScale(xGet(d))}
-							y={oneLine ? yScale(0.5) : yScale(i)}
-							class:faded={d.animal !== selectedAnimal && id === "books"}
+							class="animal"
+							class:clickable={id === "books"}
+							class:highlight={selectedAnimal === d.animal}
+							style:left={`${xScale(xGet(d))}px`}
 							onclick={emojiClicked}
-							onkeydown={onKeyDown}
 							tabindex={id === "books" ? 0 : -1}
-							role={id === "books" ? "button" : undefined}
-							aria-label={`Select ${d.animal}`}
+							onkeydown={onKeyDown}
+							aria-label={d.animal}
+							aria-role="button"
 						>
-							{@html bearSvg}
-						</text>
-					{/each}
-				</g>
-			</g>
-		</svg>
+							{d.emoji}
+						</div>
+					</div>
+				</div>
+			{/each}
+		{/if}
+
+		<div
+			class="x-axis"
+			style:left={`${oneLine ? "0" : margin.left}px`}
+			style:width={`${oneLine ? "100%" : chartWidth + "px"}`}
+		>
+			{#each xAxisLabels as label, i}
+				<div class="marker">
+					<div class="vertical" class:equal={label === "Equal"} />
+					<div class="label">{label}</div>
+				</div>
+			{/each}
+		</div>
 	</div>
 </figure>
 
@@ -175,19 +146,91 @@
 {/if}
 
 <style>
-	figure {
-		margin: 3rem 0;
+	.arrows {
+		font-size: var(--12px);
+		display: flex;
+		justify-content: center;
+		gap: 2rem;
 	}
 
-	.chart-container {
+	.rows {
+		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 2rem;
-		height: 400px;
+		gap: 0.25rem;
+		margin-right: 4rem;
 	}
 
-	.chart-container.one-line {
-		height: 175px;
+	.row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.one-line .rows {
+		margin: 0 3rem;
+	}
+
+	.one-line .row {
+		height: 4rem;
+	}
+
+	.one-line .line {
+		background: none;
+	}
+
+	.line {
+		position: relative;
+		background: var(--color-gray-50);
+		height: 1px;
+		width: 100%;
+	}
+
+	.label {
+		font-size: var(--14px);
+		text-align: end;
+	}
+
+	.animal {
+		position: absolute;
+		top: 0;
+		line-height: 1;
+		transform: translate(0, -50%);
+		z-index: 2;
+	}
+
+	.animal.clickable:hover {
+		cursor: pointer;
+	}
+
+	.x-axis {
+		position: absolute;
+		display: flex;
+		justify-content: space-between;
+		height: 100%;
+		pointer-events: none;
+	}
+
+	.marker .label {
+		position: absolute;
+		transform: translate(-50%, 0);
+		white-space: nowrap;
+		font-size: var(--12px);
+	}
+
+	.vertical {
+		width: 1px;
+		height: 100%;
+		background: var(--color-gray-50);
+	}
+
+	.equal {
+		background: var(--color-gray-800);
+		width: 2px;
+	}
+
+	figure {
+		margin: 3rem 0;
 	}
 
 	h3 {
@@ -200,79 +243,14 @@
 		text-align: center;
 	}
 
-	svg {
-		width: 100%;
-		height: 100%;
-	}
-
-	line.equal {
-		stroke: var(--color-gray-800);
-		stroke-width: 2px;
-		stroke-dasharray: 10;
-	}
-
-	.x-axis text {
-		font-size: var(--12px);
-		text-anchor: middle;
-	}
-
-	.y-axis text {
-		font-size: var(--14px);
-		text-anchor: end;
-		dominant-baseline: middle;
-	}
-
-	.animals text {
-		font-size: var(--24px);
-		text-anchor: middle;
-		dominant-baseline: middle;
-		cursor: pointer;
-		transition: opacity calc(var(--1s) * 0.2) ease-in-out;
-	}
-
-	.animals text.faded {
-		opacity: 0.7;
-	}
-
-	circle.highlight {
-		opacity: 0;
-		transition: opacity calc(var(--1s) * 0.2) ease-in-out;
-	}
-
-	circle.highlight.visible {
-		opacity: 1;
-	}
-
 	@media (max-width: 600px) {
-		figure {
-			margin: 2rem 0;
+		.one-line .rows {
+			margin: 0 2rem;
 		}
 
-		h3 {
-			font-size: var(--20px);
-		}
-
-		h4 {
-			font-size: var(--12px);
-		}
-
-		.x-axis text:nth-of-type(2),
-		.x-axis text:nth-of-type(4) {
+		.x-axis .marker:nth-child(2) .label,
+		.x-axis .marker:nth-child(4) .label {
 			display: none;
-		}
-
-		.chart-container {
-			height: 350px;
-		}
-
-		.chart-container.one-line {
-			height: 150px;
-		}
-	}
-
-	@media (max-width: 400px) {
-		h3 {
-			font-size: var(--18px);
 		}
 	}
 </style>
