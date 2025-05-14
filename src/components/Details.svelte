@@ -18,8 +18,7 @@
 		padding: var(--16px);
 		background: var(--color-purple);
 		border-radius: var(--border-radius);
-		color: var(--color-gray-50);
-		border: 8px solid var(--color-blue);
+		color: var(--color-white);
 	}
 
 	summary {

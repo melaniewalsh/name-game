@@ -22,8 +22,10 @@
 	--border-radius: 12px;
 	--font-body: var(--sans);
 	--font-form: var(--serif);
-	--color-bg: #fef198;
-	--color-bg: white;
+	--color-bg: var(--color-yellow);
+	/* --color-bg: #fef198; */
+	/* --color-bg: white; */
+	--color-heading: var(--color-purple);
 	--color-fg: var(--color-gray-900);
 	--color-primary: var(--color-red);
 	--color-primary-dark: var(--color-red-dark);
@@ -65,7 +67,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
 	font-family: var(--sans-hed);
-	color: var(--color-purple);
+	color: var(--color-heading);
 }
 
 h1 {

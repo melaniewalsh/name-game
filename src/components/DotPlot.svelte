@@ -124,6 +124,9 @@
 									alt="{d.animal} illustration"
 								/>
 							</button>
+							<!-- {#if id === "books" && selectedAnimal === d.animal}
+								<Shelf animal={selectedAnimal} books={shelfData} />
+							{/if} -->
 						</div>
 					</div>
 				{/each}
@@ -145,10 +148,6 @@
 	</div>
 </figure>
 
-{#if id === "books"}
-	<Shelf animal={selectedAnimal} books={shelfData} />
-{/if}
-
 <style>
 	.arrows {
 		font-size: var(--14px);
@@ -158,9 +157,9 @@
 	}
 
 	.inner {
-		border: 8px solid var(--color-pink);
+		/* border: 8px solid var(--color-pink); */
 		border-radius: 16px;
-		background: var(--color-yellow);
+		/* background: var(--color-yellow); */
 		padding: 8px;
 		padding-bottom: 36px;
 		margin-top: 16px;
@@ -170,7 +169,7 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 16px;
 		margin-right: 4rem;
 		margin-top: 1rem;
 	}
@@ -219,8 +218,8 @@
 		top: 0;
 		transform: translate(0, -50%);
 		box-shadow: 0 0px 4px 2px rgba(0, 0, 0, 0.2);
-		width: 42px;
-		height: 42px;
+		width: 48px;
+		height: 48px;
 		line-height: 1;
 		background: var(--color-white);
 		border-radius: 50%;

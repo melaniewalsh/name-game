@@ -96,14 +96,14 @@
 		width: 100%;
 		overflow: hidden;
 		pointer-events: none;
-		background: var(--color-blue);
+		/* background: var(--color-blue); */
 		border: 8px solid var(--color-yellow);
 		border-radius: 16px;
 		padding: 1em 0;
 	}
 
 	.has-images swiper-container {
-		background: var(--color-orange);
+		/* background: var(--color-orange); */
 	}
 
 	swiper-slide {
