@@ -39,7 +39,7 @@
 		<div class="pre">{@html pre}</div>
 	{/if}
 
-	<div>
+	<div class="outer">
 		<button onclick={() => swiperEl.swiper.slidePrev()} disabled={active === 0}
 			>{@html arrowLeft}</button
 		>
@@ -92,10 +92,6 @@
 </figure>
 
 <style>
-	.has-images swiper-container {
-		background: var(--color-orange);
-	}
-
 	swiper-container {
 		width: 100%;
 		overflow: hidden;
@@ -105,9 +101,21 @@
 		padding: 1em 0;
 	}
 
+	.has-images swiper-container {
+		background: var(--color-orange);
+	}
+
 	swiper-slide {
 		width: fit-content;
 		pointer-events: auto;
+		height: 360px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.has-images swiper-slide {
+		height: auto;
 		padding-bottom: 8px;
 	}
 
@@ -141,7 +149,7 @@
 		box-shadow: 0 4px 4px 2px rgba(0, 0, 0, 0.2);
 	}
 
-	.swiper-examples div {
+	.swiper-examples .outer {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -151,6 +159,7 @@
 
 	blockquote {
 		padding: 2em;
+		line-height: 1.4;
 	}
 
 	:global(.swiper-slide-shadow-left) {
@@ -183,11 +192,5 @@
 
 	:global(.swiper-examples button svg path) {
 		fill: var(--color-white);
-	}
-
-	@media (max-width: 600px) {
-		img {
-			height: 300px;
-		}
 	}
 </style>

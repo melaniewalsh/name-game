@@ -23,7 +23,7 @@
 </script>
 
 <h4 class="shelf-title">
-	Popular Books with Anthropomorphic {_.startCase(animal)}s
+	Popular Books with a {_.startCase(animal)}
 </h4>
 
 <figure class="swiper-books">
@@ -158,10 +158,8 @@
 	}
 
 	.shelf-title {
-		font-size: var(--18px);
-		font-weight: bold;
+		margin-top: 4rem;
 		text-align: center;
-		margin-bottom: 1rem;
 	}
 
 	a {
@@ -205,10 +203,6 @@
 	}
 
 	@media (max-width: 600px) {
-		.shelf-title {
-			font-size: var(--16px);
-		}
-
 		a {
 			height: 120px;
 		}

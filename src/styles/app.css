@@ -2,15 +2,14 @@
 @import "normalize.css";
 @import "font.css";
 @import "reset.css";
-@import url('https://fonts.googleapis.com/css2?family=Kranky&family=Love+Ya+Like+A+Sister&display=swap');
 
 
 /* colors defined in variables.css */
 :root {
 	/* font */
-	--sans: "Baloo Bhai", "Atlas Grotesk", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
-	--serif: "Atkinson", "Tiempos Text", Iowan Old Style, Times New Roman, Times, serif;
-	--serif-hed: "Love Ya Like A Sister", "Kranky", Iowan Old Style, Times New Roman, Times, serif;
+	--sans: "Baloo Bhai", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+	--serif: Iowan Old Style, Times New Roman, Times, serif;
+	--sans-hed: "Bowlby One SC", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
 	--mono: Menlo, Consolas, Monaco, monospace;
 
 	/* z-index */
@@ -23,7 +22,7 @@
 	--border-radius: 12px;
 	--font-body: var(--sans);
 	--font-form: var(--serif);
-	--color-bg: var(--color-yellow);
+	--color-bg: #fef198;
 	--color-fg: var(--color-gray-900);
 	--color-primary: var(--color-red);
 	--color-primary-dark: var(--color-red-dark);
@@ -64,29 +63,27 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-	font-family: var(--serif-hed);
+	font-family: var(--sans-hed);
 }
 
 h1 {
-	font-size: var(--72px, 72px);
+	font-size: var(--96px, 96px);
 	line-height: 1;
-	font-weight: 700;
 }
 
 h2 {
 	font-size: var(--48px, 48px);
-	line-height: 1.2;
-	font-weight: 700;
+	line-height: 1;
 }
 
 h3 {
-	font-size: var(--36px, 36px);
-	line-height: 1.2;
-	font-weight: 700;
+	font-size: var(--32px, 32px);
+	line-height: 1;
 }
 
 h4 {
-	font-size: var(--28px, 28px);
+	font-size: var(--22px, 22px);
+	line-height: 1.125;
 }
 
 h5 {

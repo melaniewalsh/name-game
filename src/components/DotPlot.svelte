@@ -17,7 +17,7 @@
 		all: allData
 	};
 	const data = dataOptions[id];
-	const labelWidth = 60;
+	const labelWidth = 72;
 	const margin = {
 		left: labelWidth + 10,
 		right: 10,
@@ -80,15 +80,15 @@
 
 <figure id={`dot-plot-${id}`} class:one-line={oneLine}>
 	<h3>{title}</h3>
-	{#if sub}<h4>{sub}</h4>{/if}
+	{#if sub}<p>{sub}</p>{/if}
 
 	<div
 		class="arrows"
 		style:margin-left={`${oneLine ? 0 : margin.left}px`}
 		style:width={oneLine ? "100%" : `${chartWidth}px`}
 	>
-		<div>{"<-"} more he/him</div>
-		<div>more she/her {"->"}</div>
+		<div>&larr; more he/him</div>
+		<div>more she/her &rarr;</div>
 	</div>
 
 	<div class="rows" bind:clientWidth={fullWidth}>
@@ -107,7 +107,7 @@
 				<div class="row">
 					<div class="label" style:width={`${labelWidth}px`}>{d.animal}</div>
 					<div class="line">
-						<div
+						<button
 							id={d.animal}
 							class="animal"
 							class:clickable={id === "books"}
@@ -117,10 +117,12 @@
 							tabindex={id === "books" ? 0 : -1}
 							onkeydown={onKeyDown}
 							aria-label={d.animal}
-							aria-role="button"
 						>
-							{d.emoji}
-						</div>
+							<img
+								src="assets/animals/{d.animal}.png"
+								alt="{d.animal} illustration"
+							/>
+						</button>
 					</div>
 				</div>
 			{/each}
@@ -147,21 +149,24 @@
 
 <style>
 	.arrows {
-		font-size: var(--12px);
+		font-size: var(--14px);
 		display: flex;
 		justify-content: center;
 		gap: 2rem;
+		margin-top: 1rem;
 	}
 
 	.rows {
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: 0.5rem;
 		margin-right: 4rem;
+		margin-top: 1rem;
 	}
 
 	.row {
+		position: relative;
 		display: flex;
 		align-items: center;
 		gap: 6px;
@@ -181,13 +186,48 @@
 
 	.line {
 		position: relative;
-		background: var(--color-gray-50);
-		height: 1px;
 		width: 100%;
 	}
 
+	.line:before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 1px;
+		opacity: 0.5;
+		border-top: 1px dashed var(--color-fg);
+	}
+
+	button {
+		background: none;
+		border: none;
+		padding: 0;
+		margin: 0;
+		position: absolute;
+		top: 0;
+		transform: translate(0, -50%);
+		box-shadow: 0 0px 4px 2px rgba(0, 0, 0, 0.2);
+		width: 42px;
+		height: 42px;
+		line-height: 1;
+		background: var(--color-white);
+		border-radius: 50%;
+		overflow: hidden;
+	}
+
+	button img {
+		width: 100%;
+		pointer-events: none;
+	}
+
+	button:focus {
+		outline: 2px solid var(--color-fg);
+	}
+
 	.label {
-		font-size: var(--14px);
+		font-size: var(--18px);
 		text-align: end;
 	}
 
@@ -213,19 +253,21 @@
 
 	.marker .label {
 		position: absolute;
-		transform: translate(-50%, 0);
+		transform: translate(-50%, 50%);
 		white-space: nowrap;
-		font-size: var(--12px);
+		font-size: var(--14px);
 	}
 
 	.vertical {
 		width: 1px;
 		height: 100%;
-		background: var(--color-gray-50);
+		background: var(--color-fg);
+		opacity: 0.5;
 	}
 
 	.equal {
-		background: var(--color-gray-800);
+		background: var(--color-fg);
+		opacity: 0.5;
 		width: 2px;
 	}
 
@@ -234,13 +276,13 @@
 	}
 
 	h3 {
-		font-size: var(--24px);
 		text-align: center;
+		margin-bottom: 0;
 	}
 
-	h4 {
-		font-size: var(--14px);
+	p {
 		text-align: center;
+		margin-top: 0;
 	}
 
 	@media (max-width: 600px) {

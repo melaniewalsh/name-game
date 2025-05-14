@@ -28,5 +28,6 @@
 		font-size: var(--14px);
 		text-align: center;
 		margin-top: 8px;
+		line-height: 1.2;
 	}
 </style>
