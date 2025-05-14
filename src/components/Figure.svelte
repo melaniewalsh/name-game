@@ -1,9 +1,16 @@
 <script>
 	const { src, alt, caption } = $props();
+	const video = src.endsWith(".mp4");
 </script>
 
-<figure>
-	<img {src} {alt} />
+<figure class:video>
+	{#if video}
+		<video autoplay loop muted playsinline controls>
+			<source {src} type="video/mp4" />
+		</video>
+	{:else}
+		<img {src} {alt} />
+	{/if}
 	{#if caption}
 		<figcaption>{@html caption}</figcaption>
 	{/if}
@@ -17,7 +24,12 @@
 		max-width: 20em;
 	}
 
-	figure img {
+	figure.video {
+		max-width: 15em;
+	}
+
+	img,
+	video {
 		max-width: 100%;
 		height: auto;
 		box-shadow: 0 0 12px 4px rgba(0, 0, 0, 0.2);

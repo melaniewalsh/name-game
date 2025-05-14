@@ -44,7 +44,7 @@
 	}
 
 	.head div {
-		border-bottom: 1px solid var(--color-gray-300);
+		border-bottom: 1px solid currentColor;
 		padding-bottom: 0.5rem;
 	}
 
