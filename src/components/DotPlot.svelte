@@ -82,63 +82,65 @@
 	<h3>{title}</h3>
 	{#if sub}<p>{sub}</p>{/if}
 
-	<div
-		class="arrows"
-		style:margin-left={`${oneLine ? 0 : margin.left}px`}
-		style:width={oneLine ? "100%" : `${chartWidth}px`}
-	>
-		<div>&larr; more he/him</div>
-		<div>more she/her &rarr;</div>
-	</div>
+	<div class="inner">
+		<div
+			class="arrows"
+			style:margin-left={`${oneLine ? 0 : margin.left}px`}
+			style:width={oneLine ? "100%" : `${chartWidth}px`}
+		>
+			<div>&larr; more he/him</div>
+			<div>more she/her &rarr;</div>
+		</div>
 
-	<div class="rows" bind:clientWidth={fullWidth}>
-		{#if oneLine}
-			<div class="row">
-				<div class="line">
-					{#each data as d, i}
-						<div class="animal" style:left={`${xScale(xGet(d))}px`}>
-							{d.emoji}
-						</div>
-					{/each}
-				</div>
-			</div>
-		{:else}
-			{#each data as d, i}
+		<div class="rows" bind:clientWidth={fullWidth}>
+			{#if oneLine}
 				<div class="row">
-					<div class="label" style:width={`${labelWidth}px`}>{d.animal}</div>
 					<div class="line">
-						<button
-							id={d.animal}
-							class="animal"
-							class:clickable={id === "books"}
-							class:highlight={selectedAnimal === d.animal}
-							style:left={`${xScale(xGet(d))}px`}
-							onclick={emojiClicked}
-							tabindex={id === "books" ? 0 : -1}
-							onkeydown={onKeyDown}
-							aria-label={d.animal}
-						>
-							<img
-								src="assets/animals/{d.animal}.png"
-								alt="{d.animal} illustration"
-							/>
-						</button>
+						{#each data as d, i}
+							<div class="animal" style:left={`${xScale(xGet(d))}px`}>
+								{d.emoji}
+							</div>
+						{/each}
 					</div>
 				</div>
-			{/each}
-		{/if}
+			{:else}
+				{#each data as d, i}
+					<div class="row">
+						<div class="label" style:width={`${labelWidth}px`}>{d.animal}</div>
+						<div class="line">
+							<button
+								id={d.animal}
+								class="animal"
+								class:clickable={id === "books"}
+								class:highlight={selectedAnimal === d.animal}
+								style:left={`${xScale(xGet(d))}px`}
+								onclick={emojiClicked}
+								tabindex={id === "books" ? 0 : -1}
+								onkeydown={onKeyDown}
+								aria-label={d.animal}
+							>
+								<img
+									src="assets/animals/{d.animal}.png"
+									alt="{d.animal} illustration"
+								/>
+							</button>
+						</div>
+					</div>
+				{/each}
+			{/if}
 
-		<div
-			class="x-axis"
-			style:left={`${oneLine ? "0" : margin.left}px`}
-			style:width={`${oneLine ? "100%" : chartWidth + "px"}`}
-		>
-			{#each xAxisLabels as label, i}
-				<div class="marker">
-					<div class="vertical" class:equal={label === "Equal"} />
-					<div class="label">{label}</div>
-				</div>
-			{/each}
+			<div
+				class="x-axis"
+				style:left={`${oneLine ? "0" : margin.left}px`}
+				style:width={`${oneLine ? "100%" : chartWidth + "px"}`}
+			>
+				{#each xAxisLabels as label, i}
+					<div class="marker">
+						<div class="vertical" class:equal={label === "Equal"} />
+						<div class="label">{label}</div>
+					</div>
+				{/each}
+			</div>
 		</div>
 	</div>
 </figure>
@@ -153,7 +155,15 @@
 		display: flex;
 		justify-content: center;
 		gap: 2rem;
-		margin-top: 1rem;
+	}
+
+	.inner {
+		border: 8px solid var(--color-pink);
+		border-radius: 16px;
+		background: var(--color-yellow);
+		padding: 8px;
+		padding-bottom: 36px;
+		margin-top: 16px;
 	}
 
 	.rows {

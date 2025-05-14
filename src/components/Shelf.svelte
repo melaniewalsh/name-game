@@ -140,6 +140,7 @@
 		overflow: hidden;
 		pointer-events: none;
 		background: var(--color-green);
+		border: 8px solid var(--color-yellow);
 		border-radius: 16px;
 		padding: 1em 0;
 	}

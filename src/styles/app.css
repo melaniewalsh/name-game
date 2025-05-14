@@ -23,6 +23,7 @@
 	--font-body: var(--sans);
 	--font-form: var(--serif);
 	--color-bg: #fef198;
+	--color-bg: white;
 	--color-fg: var(--color-gray-900);
 	--color-primary: var(--color-red);
 	--color-primary-dark: var(--color-red-dark);
@@ -64,6 +65,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
 	font-family: var(--sans-hed);
+	color: var(--color-purple);
 }
 
 h1 {

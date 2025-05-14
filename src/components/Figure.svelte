@@ -22,6 +22,7 @@
 		height: auto;
 		box-shadow: 0 0 12px 4px rgba(0, 0, 0, 0.2);
 		border-radius: 8px;
+		border: 8px solid var(--color-orange);
 	}
 
 	figcaption {
