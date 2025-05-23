@@ -6,7 +6,6 @@
 	import allData from "$data/dot-plot-all.csv";
 	import { scaleLinear } from "d3-scale";
 	import animalBooksData from "$data/top-books.csv";
-	import bearSvg from "$svg/animals/bear.svg";
 
 	const { id, title, sub } = $props();
 
@@ -217,22 +216,21 @@
 		position: absolute;
 		top: 0;
 		transform: translate(0, -50%);
-		box-shadow: 0 0px 4px 2px rgba(0, 0, 0, 0.2);
-		width: 48px;
-		height: 48px;
+		width: 72px;
+		height: 72px;
 		line-height: 1;
-		background: var(--color-white);
-		border-radius: 50%;
+		box-shadow: none;
 		overflow: hidden;
 	}
 
 	button img {
 		width: 100%;
 		pointer-events: none;
+		filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
 	}
 
 	button:focus {
-		outline: 2px solid var(--color-fg);
+		filter: drop-shadow(0 0 4px var(--color-red));
 	}
 
 	.label {

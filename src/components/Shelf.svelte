@@ -199,8 +199,10 @@
 		height: auto;
 	}
 
-	:global(.swiper-books button svg) {
-		fill: var(--color-white);
+	:global(.swiper-books button svg path) {
+		fill: var(--color-red);
+		stroke: var(--color-fg);
+		stroke-width: 2px;
 	}
 
 	@media (max-width: 600px) {

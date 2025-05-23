@@ -96,9 +96,6 @@
 		width: 100%;
 		overflow: hidden;
 		pointer-events: none;
-		/* background: var(--color-blue); */
-		border: 8px solid var(--color-yellow);
-		border-radius: 16px;
 		padding: 1em 0;
 	}
 
@@ -145,9 +142,9 @@
 
 	img {
 		max-height: 480px;
-		border: 8px solid var(--color-white);
+		border: 12px solid var(--color-fg);
 		border-radius: var(--border-radius);
-		box-shadow: 0 4px 4px 2px rgba(0, 0, 0, 0.2);
+		/* box-shadow: 0 4px 4px 2px rgba(0, 0, 0, 0.2); */
 	}
 
 	.swiper-examples .outer {
@@ -192,6 +189,8 @@
 	}
 
 	:global(.swiper-examples button svg path) {
-		fill: var(--color-white);
+		fill: var(--color-red);
+		stroke: var(--color-fg);
+		stroke-width: 3px;
 	}
 </style>

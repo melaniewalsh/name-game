@@ -16,9 +16,9 @@
 <style>
 	details {
 		padding: var(--16px);
-		background: var(--color-purple);
-		border-radius: var(--border-radius);
+		background: var(--color-fg);
 		color: var(--color-white);
+		border-radius: var(--border-radius);
 	}
 
 	summary {

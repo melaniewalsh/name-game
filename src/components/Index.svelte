@@ -13,7 +13,7 @@
 
 	const copy = getContext("copy");
 	const { body } = copy;
-	const { title, description, byline } = copy.meta;
+	const { title, description, byline, others } = copy.meta;
 	const components = { Ul, Details, Swiper, DotPlot, Figure, Table };
 	// const data = getContext("data");
 
@@ -23,7 +23,7 @@
 </script>
 
 <article>
-	<Hero {title} {description} {byline}></Hero>
+	<Hero {title} {description} {byline} {others}></Hero>
 	<CMS {body} {components} />
 </article>
 
