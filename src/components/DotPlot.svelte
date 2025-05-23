@@ -123,9 +123,9 @@
 									alt="{d.animal} illustration"
 								/>
 							</button>
-							<!-- {#if id === "books" && selectedAnimal === d.animal}
-								<Shelf animal={selectedAnimal} books={shelfData} />
-							{/if} -->
+							{#if id === "books" && selectedAnimal === d.animal}
+								<!-- <Shelf animal={selectedAnimal} books={shelfData} /> -->
+							{/if}
 						</div>
 					</div>
 				{/each}
