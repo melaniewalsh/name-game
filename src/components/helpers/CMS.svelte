@@ -2,82 +2,121 @@
 	// components: an object of components that map to section names (e.g., { "Hero": Hero }) where Hero is a Svelte component
 	// body: an array of objects that contain a {section, content} obj
 	let { components = {}, body = [] } = $props();
-
-	const collapsibleSections = ["analysis", "methods"];
-	let isOpen = $state(
-		collapsibleSections.reduce((acc, section) => {
-			acc[section] = false;
-			return acc;
-		}, {})
-	);
 </script>
 
-{#each body as { section, content }}
+{#each body as { section, content, summary }}
 	<!-- replace all non alpha numeric characters with "" -->
 	{@const id = section.toLowerCase().replace(/[^a-z0-9]/g, "")}
 	{@const C = components[section]}
-	{@const isCollapsible = collapsibleSections.includes(id)}
-	<section {id} class:collapsible={isCollapsible} class:open={isOpen[id]}>
-		{#if C}
-			<C {...content} />
-		{:else}
-			{#each content as { type, value }}
-				{@const C = components[type]}
-				{@const isString = typeof value === "string"}
-				{#if C}
-					<C {...value} />
-				{:else if type === "text"}
-					<p>{@html value}</p>
-				{:else if isString}
-					<svelte:element this={type}>
-						{@html value}
-					</svelte:element>
-				{:else}
-					<svelte:element this={type} {...value}></svelte:element>
-				{/if}
-			{/each}
-		{/if}
+	{#if summary}
+		<details class="collapsible-section">
+			<summary>
+				<div class="top">
+					<h2>{summary.title}</h2>
+					<ul>
+						{#each summary.questions as q}
+							<li>{q}</li>
+						{/each}
+					</ul>
+				</div>
+				<div class="read-more">Click to read more ({summary.time})</div>
+			</summary>
 
-		{#if isCollapsible}
-			<div class="overlay"></div>
-			<button class="more" onclick={() => (isOpen[id] = !isOpen[id])}
-				>Read {isOpen[id] ? "less" : "more"}</button
-			>
-		{/if}
-	</section>
+			<section {id}>
+				{#if C}
+					<C {...content} />
+				{:else}
+					{#each content as { type, value }}
+						{@const C = components[type]}
+						{@const isString = typeof value === "string"}
+						{#if C}
+							<C {...value} />
+						{:else if type === "text"}
+							<p>{@html value}</p>
+						{:else if isString}
+							<svelte:element this={type}>
+								{@html value}
+							</svelte:element>
+						{:else}
+							<svelte:element this={type} {...value}></svelte:element>
+						{/if}
+					{/each}
+				{/if}
+			</section>
+		</details>
+	{:else}
+		<section {id}>
+			{#if C}
+				<C {...content} />
+			{:else}
+				{#each content as { type, value }}
+					{@const C = components[type]}
+					{@const isString = typeof value === "string"}
+					{#if C}
+						<C {...value} />
+					{:else if type === "text"}
+						<p>{@html value}</p>
+					{:else if isString}
+						<svelte:element this={type}>
+							{@html value}
+						</svelte:element>
+					{:else}
+						<svelte:element this={type} {...value}></svelte:element>
+					{/if}
+				{/each}
+			{/if}
+		</section>
+	{/if}
 {/each}
 
 <style>
-	.collapsible {
-		position: relative;
-		height: 300px;
-		overflow: hidden;
+	section,
+	.collapsible-section {
+		margin: 1rem 0;
 	}
 
-	.open {
-		height: auto;
+	summary {
+		background: white;
+		border: 3px solid black;
+		padding: 1rem 2rem;
+		list-style: none;
 	}
 
-	.more {
-		position: absolute;
-		bottom: 1rem;
-		left: 50%;
-		transform: translate(-50%, 0);
-		text-transform: uppercase;
-		font-family: var(--sans);
-		font-weight: bold;
+	summary:hover {
+		cursor: pointer;
+	}
+
+	.top {
+		display: flex;
+	}
+
+	.collapsible-section h2 {
+		width: 40%;
+	}
+
+	.collapsible-section ul {
+		width: 60%;
+	}
+
+	.read-more {
+		background: black;
+		color: white;
+		width: fit-content;
+		padding: 0 0.25rem;
 		font-size: var(--20px);
 	}
+	@media (max-width: 768px) {
+		.top {
+			flex-direction: column;
+		}
 
-	.overlay {
-		position: absolute;
-		bottom: 0;
-		background: linear-gradient(
-			to bottom,
-			rgba(255, 216, 93, 0.7) 0,
-			var(--color-yellow) 100%
-		);
-		height: 100px;
-		width: 100%;
+		.collapsible-section h2,
+		.collapsible-section ul {
+			width: 100%;
+		}
+
+		.read-more {
+			margin-top: 0.5rem;
+		}
 	}
 </style>
