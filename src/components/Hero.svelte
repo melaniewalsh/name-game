@@ -1,8 +1,11 @@
 <script>
+	import Bear from "$components/Hero.Bear.svelte";
 	const { title, description, byline, others } = $props();
 </script>
 
 <section id="hero">
+	<Bear />
+
 	<h1 class="text-outline">{title}</h1>
 	<p class="description">{description}</p>
 	<p class="byline">{@html byline}</p>
@@ -10,6 +13,10 @@
 </section>
 
 <style>
+	section {
+		position: relative;
+	}
+
 	h1 {
 		color: var(--color-blue-light);
 		--color-text-outline: var(--color-fg);
