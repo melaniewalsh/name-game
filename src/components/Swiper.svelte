@@ -61,7 +61,25 @@
 						tabindex="0"
 						role="button"
 					>
-						<img src={example.src} alt={example?.alt} />
+						<img
+							src={example.src}
+							alt={example?.alt}
+							class={example.pronoun || ""}
+						/>
+
+						{#if example.pronoun}
+							<div class={`pronoun ${example.pronoun}`}>
+								{#if example.pronoun === "they"}
+									They/them
+								{:else if example.pronoun === "he"}
+									He/him
+								{:else if example.pronoun === "she"}
+									She/her
+								{:else}
+									{example.pronoun}
+								{/if}
+							</div>
+						{/if}
 					</swiper-slide>
 				{:else}
 					<swiper-slide
@@ -114,7 +132,7 @@
 
 	.has-images swiper-slide {
 		height: auto;
-		padding-bottom: 8px;
+		padding-bottom: 2rem;
 	}
 
 	swiper-slide:hover {
@@ -145,6 +163,33 @@
 		border: 12px solid var(--color-fg);
 		border-radius: var(--border-radius);
 		/* box-shadow: 0 4px 4px 2px rgba(0, 0, 0, 0.2); */
+	}
+
+	img.he {
+		border: 12px solid var(--color-blue-light);
+	}
+
+	img.she {
+		border: 12px solid var(--color-pink-light);
+	}
+
+	.pronoun {
+		position: absolute;
+		bottom: 0;
+		background: var(--color-gray-200);
+		border: 3px solid black;
+		text-transform: uppercase;
+		font-weight: bold;
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.5rem;
+	}
+
+	.pronoun.he {
+		background: var(--color-blue-light);
+	}
+
+	.pronoun.she {
+		background: var(--color-pink-light);
 	}
 
 	.swiper-examples .outer {

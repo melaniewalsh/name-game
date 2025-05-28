@@ -54,6 +54,9 @@
 		"pink": {
 			"value": "#FF08A7"
 		},
+		"pink-light": {
+			"value": "#D79592"
+		},
 		"blue": {
 			"value": "#66A7DB"
 		},

@@ -2,13 +2,22 @@
 	// components: an object of components that map to section names (e.g., { "Hero": Hero }) where Hero is a Svelte component
 	// body: an array of objects that contain a {section, content} obj
 	let { components = {}, body = [] } = $props();
+
+	const collapsibleSections = ["analysis", "methods"];
+	let isOpen = $state(
+		collapsibleSections.reduce((acc, section) => {
+			acc[section] = false;
+			return acc;
+		}, {})
+	);
 </script>
 
 {#each body as { section, content }}
 	<!-- replace all non alpha numeric characters with "" -->
 	{@const id = section.toLowerCase().replace(/[^a-z0-9]/g, "")}
 	{@const C = components[section]}
-	<section {id}>
+	{@const isCollapsible = collapsibleSections.includes(id)}
+	<section {id} class:collapsible={isCollapsible} class:open={isOpen[id]}>
 		{#if C}
 			<C {...content} />
 		{:else}
@@ -28,5 +37,47 @@
 				{/if}
 			{/each}
 		{/if}
+
+		{#if isCollapsible}
+			<div class="overlay"></div>
+			<button class="more" onclick={() => (isOpen[id] = !isOpen[id])}
+				>Read {isOpen[id] ? "less" : "more"}</button
+			>
+		{/if}
 	</section>
 {/each}
+
+<style>
+	.collapsible {
+		position: relative;
+		height: 300px;
+		overflow: hidden;
+	}
+
+	.open {
+		height: auto;
+	}
+
+	.more {
+		position: absolute;
+		bottom: 1rem;
+		left: 50%;
+		transform: translate(-50%, 0);
+		text-transform: uppercase;
+		font-family: var(--sans);
+		font-weight: bold;
+		font-size: var(--20px);
+	}
+
+	.overlay {
+		position: absolute;
+		bottom: 0;
+		background: linear-gradient(
+			to bottom,
+			rgba(255, 216, 93, 0.7) 0,
+			var(--color-yellow) 100%
+		);
+		height: 100px;
+		width: 100%;
+	}
+</style>
