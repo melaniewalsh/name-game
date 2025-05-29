@@ -90,11 +90,11 @@
 		display: flex;
 	}
 
-	.collapsible-section h2 {
+	summary h2 {
 		width: 40%;
 	}
 
-	.collapsible-section ul {
+	summary ul {
 		width: 60%;
 	}
 
@@ -110,8 +110,8 @@
 			flex-direction: column;
 		}
 
-		.collapsible-section h2,
-		.collapsible-section ul {
+		summary h2,
+		summary ul {
 			width: 100%;
 		}
 
