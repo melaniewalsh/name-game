@@ -9,6 +9,7 @@
 	import Figure from "$components/Figure.svelte";
 	import DotPlot from "$components/DotPlot.svelte";
 	import Table from "$components/Table.svelte";
+	import Grid from "$components/Grid.svelte";
 	import { register } from "swiper/element/bundle";
 
 	const copy = getContext("copy");
@@ -23,8 +24,9 @@
 </script>
 
 <article>
-	<Hero {title} {description} {byline} {others}></Hero>
-	<CMS {body} {components} />
+	<Grid />
+	<!-- <Hero {title} {description} {byline} {others}></Hero>
+	<CMS {body} {components} /> -->
 </article>
 
 <svelte:boundary onerror={(e) => console.error(e)}>

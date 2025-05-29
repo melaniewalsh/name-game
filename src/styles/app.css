@@ -3,13 +3,16 @@
 @import "font.css";
 @import "reset.css";
 
-
 /* colors defined in variables.css */
 :root {
 	/* font */
-	--sans: "Baloo Bhai", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+	--sans:
+		"Baloo Bhai", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
+		sans-serif;
 	--serif: Iowan Old Style, Times New Roman, Times, serif;
-	--sans-hed: "Bowlby One SC", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+	--sans-hed:
+		"Bowlby One SC", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
+		sans-serif;
 	--mono: Menlo, Consolas, Monaco, monospace;
 
 	/* z-index */
@@ -28,7 +31,7 @@
 	--color-heading: var(--color-fg);
 	--color-fg: var(--color-gray-900);
 	--color-primary: var(--color-red);
-	
+
 	--color-link: currentColor;
 	--color-link-hover: currentColor;
 	--color-focus: var(--color-white);
@@ -64,7 +67,12 @@ body {
 	font-size: var(--24px, 24px);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 	font-family: var(--sans-hed);
 	color: var(--color-heading);
 }
@@ -97,7 +105,8 @@ h6 {
 	font-size: var(--20px, 20px);
 }
 
-p, li {
+p,
+li {
 	margin: 1em auto;
 }
 
@@ -127,9 +136,10 @@ section {
 	h3 {
 		font-size: var(--24px, 24px);
 	}
-}	
+}
 
-button, .btn {
+button,
+.btn {
 	appearance: none;
 	cursor: pointer;
 	box-shadow: 0 8px 0 var(--color-red);
@@ -139,10 +149,31 @@ button, .btn {
 	align-items: center;
 	margin: 0;
 	padding: 0.5em;
-	transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+	transition:
+		transform 0.1s ease-in-out,
+		box-shadow 0.1s ease-in-out;
 }
 
-button:hover, .btn:hover {
+button:hover,
+.btn:hover {
 	transform: translate(0, 4px);
 	box-shadow: 0 4px 0 var(--color-primary-dark);
+}
+
+span.he {
+	background-color: var(--color-blue-light);
+	padding: 0.2em 0.4em;
+	border-radius: 0.25em;
+}
+
+span.she {
+	background-color: var(--color-green-light);
+	padding: 0.2em 0.4em;
+	border-radius: 0.25em;
+}
+
+span.neutral {
+	background-color: var(--color-gray-200);
+	padding: 0.2em 0.4em;
+	border-radius: 0.25em;
 }
