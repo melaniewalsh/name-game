@@ -1,10 +1,15 @@
 <script>
-	export let label;
-	export let style = "inner";
-	export let options = ["on", "off"];
-	export let value;
+	let {
+		label,
+		style = "inner",
+		options = [
+			{ text: "On", value: "on" },
+			{ text: "Off", value: "off" }
+		],
+		value = $bindable()
+	} = $props();
 
-	$: checked = value === options[0].value;
+	let checked = $derived(value === options[0].value);
 
 	const id = `toggle-${Math.floor(Math.random() * 1000000)}`;
 
@@ -22,7 +27,7 @@
 		role="switch"
 		aria-checked={checked}
 		aria-labelledby={id}
-		on:click={handleClick}
+		onclick={handleClick}
 	>
 		{#if style === "inner"}
 			<span>{options[0].text}</span>
