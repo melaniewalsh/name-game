@@ -31,7 +31,24 @@
 		"horse",
 		"snake",
 		"aardvark",
-		"badger"
+		"badger",
+		"llama",
+		"crocodile",
+		"squirrel",
+		"goose",
+		"turtle",
+		"tiger",
+		"fly",
+		"penguin",
+		"raccoon",
+		"sheep",
+		"whale",
+		"worm",
+		"crab",
+		"deer",
+		"donkey",
+		"hippo",
+		"moose"
 	];
 
 	let selectedId = $state(null);
