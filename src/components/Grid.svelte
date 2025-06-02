@@ -71,7 +71,7 @@
 		"pigeon",
 		"beaver",
 		"sparrow",
-		"rhinoceros",
+		"rhino",
 		"boa constrictor",
 		"camel",
 		"caterpillar",
@@ -85,8 +85,30 @@
 		"jellyfish",
 		"hyena",
 		"koala",
-		"possum",
-		"newt"
+		"opossum",
+		"newt",
+		"praying mantis",
+		"walking stick",
+		"seal",
+		"snail",
+		"stink bug",
+		"tortoise",
+		"turkey",
+		"zebra",
+		"eel",
+		"flea",
+		"armadillo",
+		"warthog",
+		"flamingo",
+		"hawk",
+		"iguana",
+		"baboon",
+		"chimpanzee",
+		"dragonfly",
+		"jaguar",
+		"leopard",
+		"dolphin",
+		"pony"
 	];
 
 	let selectedId = $state(null);
@@ -114,7 +136,7 @@
 		"he/him": "var(--color-blue-light)",
 		other: "var(--color-gray-100)"
 	};
-	const pronounOrder = Object.keys(pronounColors);
+	const pronounOrder = ["other", "she/her", "he/him"];
 	const animalCounts = _.countBy(data, "animal_group");
 	const pronounCounts = _.countBy(data, "pronoun");
 
@@ -141,7 +163,7 @@
 					[
 						(d) => animalCounts[d.animal_group],
 						"animal_group",
-						(d) => pronounOrder.indexOf(d.pronoun)
+						(d) => pronounOrder.indexOf(normalizePronoun(d.pronoun))
 					],
 					["desc", "asc", "desc"]
 				).map((d, i) => ({
