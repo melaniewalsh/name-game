@@ -15,7 +15,7 @@
 	const copy = getContext("copy");
 	const { body } = copy;
 	const { title, description, byline, others } = copy.meta;
-	const components = { Ul, Details, Swiper, DotPlot, Figure, Table };
+	const components = { Ul, Details, Swiper, DotPlot, Figure, Table, Grid };
 	// const data = getContext("data");
 
 	onMount(() => {
@@ -24,9 +24,8 @@
 </script>
 
 <article>
-	<Grid />
-	<!-- <Hero {title} {description} {byline} {others}></Hero>
-	<CMS {body} {components} /> -->
+	<Hero {title} {description} {byline} {others}></Hero>
+	<CMS {body} {components} />
 </article>
 
 <svelte:boundary onerror={(e) => console.error(e)}>
