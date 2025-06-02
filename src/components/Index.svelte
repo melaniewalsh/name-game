@@ -9,12 +9,13 @@
 	import Figure from "$components/Figure.svelte";
 	import DotPlot from "$components/DotPlot.svelte";
 	import Table from "$components/Table.svelte";
+	import Grid from "$components/Grid.svelte";
 	import { register } from "swiper/element/bundle";
 
 	const copy = getContext("copy");
 	const { body } = copy;
 	const { title, description, byline, others } = copy.meta;
-	const components = { Ul, Details, Swiper, DotPlot, Figure, Table };
+	const components = { Ul, Details, Swiper, DotPlot, Figure, Table, Grid };
 	// const data = getContext("data");
 
 	onMount(() => {
