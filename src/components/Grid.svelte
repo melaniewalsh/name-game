@@ -129,7 +129,7 @@
 		"vulture",
 		"wolverine",
 		"moth",
-		"yellow jacket",
+		// "yellow jacket",
 		"woodchuck",
 		"grasshopper",
 		"mongoose",
