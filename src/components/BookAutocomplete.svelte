@@ -100,7 +100,7 @@
 		background: white;
 		border: 1px solid #d1d5db;
 		border-radius: 0.375rem;
-		max-height: 6rem;
+		max-height: 20rem;
 		overflow-y: scroll;
 		z-index: 50;
 		box-shadow:
