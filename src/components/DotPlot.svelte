@@ -1,11 +1,9 @@
 <script>
-	import Shelf from "$components/Shelf.svelte";
 	import booksData from "$data/dot-plot-books.csv";
 	import surveyData from "$data/dot-plot-survey.csv";
 	import chatData from "$data/dot-plot-chat.csv";
 	import allData from "$data/dot-plot-all.csv";
 	import { scaleLinear } from "d3-scale";
-	import animalBooksData from "$data/top-books.csv";
 
 	const { id, title, sub } = $props();
 
@@ -28,30 +26,6 @@
 	let fullWidth = $state(0);
 	let chartWidth = $derived(fullWidth - margin.left - margin.right);
 	let selectedAnimal = $state(data[0].animal);
-	let shelfData = $derived(
-		id === "books"
-			? Array.from(
-					new Map(
-						animalBooksData
-							.filter((d) => d.animal_group === selectedAnimal)
-							.sort((a, b) => Number(b.num_ratings) - Number(a.num_ratings))
-							.map((book) => [book.title, book])
-					).values()
-				).map((d) => {
-					let characters = animalBooksData.filter(
-						(b) => b.title === d.title && b.animal_group === selectedAnimal
-					);
-					let groupedByPronoun = characters.reduce((acc, c) => {
-						acc[c.pronoun] = (acc[c.pronoun] || 0) + 1;
-						return acc;
-					}, {});
-					return {
-						...d,
-						characters: groupedByPronoun
-					};
-				})
-			: []
-	);
 
 	const xScale = $derived(
 		scaleLinear().domain([0, 100]).range([0, chartWidth])
@@ -64,17 +38,6 @@
 		"75% she/her",
 		"100% she/her"
 	];
-
-	const emojiClicked = (e) => {
-		if (id !== "books") return;
-		selectedAnimal = e.target.id;
-	};
-
-	const onKeyDown = (e) => {
-		if (e.key === "Enter") {
-			emojiClicked(e);
-		}
-	};
 </script>
 
 <figure id={`dot-plot-${id}`} class:one-line={oneLine}>
@@ -107,22 +70,16 @@
 					<div class="row">
 						<div class="label" style:width={`${labelWidth}px`}>{d.animal}</div>
 						<div class="line">
-							<button
+							<div
 								id={d.animal}
 								class="animal"
-								class:clickable={id === "books"}
-								class:highlight={selectedAnimal === d.animal}
 								style:left={`${xScale(xGet(d))}px`}
-								onclick={emojiClicked}
-								tabindex={id === "books" ? 0 : -1}
-								onkeydown={onKeyDown}
-								aria-label={d.animal}
 							>
 								<img
 									src="assets/animals/{d.animal}.png"
 									alt="{d.animal} illustration"
 								/>
-							</button>
+							</div>
 							{#if id === "books" && selectedAnimal === d.animal}
 								<!-- <Shelf animal={selectedAnimal} books={shelfData} /> -->
 							{/if}
@@ -208,7 +165,7 @@
 		border-top: 1px dashed var(--color-fg);
 	}
 
-	button {
+	.animal {
 		background: none;
 		border: none;
 		padding: 0;
@@ -223,14 +180,10 @@
 		overflow: hidden;
 	}
 
-	button img {
+	.animal img {
 		width: 100%;
 		pointer-events: none;
 		filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
-	}
-
-	button:focus {
-		filter: drop-shadow(0 0 4px var(--color-red));
 	}
 
 	.label {
@@ -244,10 +197,6 @@
 		line-height: 1;
 		transform: translate(0, -50%);
 		z-index: 2;
-	}
-
-	.animal.clickable:hover {
-		cursor: pointer;
 	}
 
 	.x-axis {
