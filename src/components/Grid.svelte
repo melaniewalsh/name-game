@@ -2,6 +2,7 @@
 	import Toggle from "$components/helpers/migrate/Toggle.svelte";
 	import data from "$data/all_animals.csv";
 	import _ from "lodash";
+	import BookAutocomplete from "./BookAutocomplete.svelte";
 
 	const haveImages = [
 		"bear",
@@ -146,6 +147,8 @@
 
 	let selectedId = $state(null);
 
+	let titleFilter = $state(null);
+
 	let filteredAnimalCounts = $derived(() =>
 		_.countBy(
 			data.filter(
@@ -167,7 +170,7 @@
 	const pronounColors = {
 		"she/her": "var(--color-pink-light)",
 		"he/him": "var(--color-blue-light)",
-		other: "var(--color-gray-100)"
+		other: "var(--color-gray-200)"
 	};
 	const pronounOrder = ["other", "she/her", "he/him"];
 	const animalCounts = _.countBy(data, "animal_group");
@@ -184,9 +187,26 @@
 			const norm = normalizePronoun(d.pronoun);
 			return (
 				(!animalFilter || d.animal_group === animalFilter) &&
-				(!pronounFilter || normalizePronoun(d.pronoun) === pronounFilter)
+				(!pronounFilter || normalizePronoun(d.pronoun) === pronounFilter) &&
+				(!titleFilter ||
+					d.title.toLowerCase().includes(titleFilter.toLowerCase()))
 			);
 		})
+	);
+
+	let bookTitles = $derived(
+		[
+			...new Set(
+				data
+					.filter((d) => {
+						return (
+							(!animalFilter || d.animal_group === animalFilter) &&
+							(!pronounFilter || normalizePronoun(d.pronoun) === pronounFilter)
+						);
+					})
+					.map((d) => d.title.split("(")[0].trim())
+			)
+		].sort()
 	);
 
 	let filteredSortedData = $derived(
@@ -242,6 +262,7 @@
 		sortBy = "animal";
 		animalFilter = "";
 		pronounFilter = "";
+		titleFilter = "";
 	};
 
 	const onMouseEnter = (e) => {
@@ -306,6 +327,15 @@
 			</select>
 		</div>
 	</div>
+
+	<div>
+		<BookAutocomplete
+			options={bookTitles}
+			bind:bindValue={titleFilter}
+			placeholder="Search by title"
+		/>
+	</div>
+	<br />
 
 	<div class="bar-labels">
 		{#each pronounBreakdown() as { pronoun, percent }}
