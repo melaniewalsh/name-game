@@ -1,6 +1,7 @@
 <script>
 	import arrowLeft from "$svg/arrow-left.svg";
 	import arrowRight from "$svg/arrow-right.svg";
+
 	const { examples, pre } = $props();
 
 	const hasImages = examples.every((example) => example.src);

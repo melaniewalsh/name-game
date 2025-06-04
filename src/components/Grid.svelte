@@ -151,7 +151,7 @@
 		<div>Sort by</div>
 		<select bind:value={sortBy}>
 			{#each ["animal", "gender"] as option}
-				<option value={option}>{_.startCase(option)}</option>
+				<option value={option}>{_.upperFirst(option)}</option>
 			{/each}
 		</select>
 	</div>
@@ -162,7 +162,7 @@
 			<option value="">All animals</option>
 			{#each _.orderBy(Object.keys(filteredAnimalCounts()), (d) => filteredAnimalCounts()[d], "desc") as animal_group}
 				<option value={animal_group}>
-					{animal_group} ({filteredAnimalCounts()[animal_group]})
+					{_.upperFirst(animal_group)} ({filteredAnimalCounts()[animal_group]})
 				</option>
 			{/each}
 		</select>
@@ -173,7 +173,7 @@
 		<select bind:value={pronounFilter}>
 			<option value="">All pronouns</option>
 			{#each ["he/him", "she/her", "other"] as pronoun}
-				<option value={pronoun}>{pronoun}</option>
+				<option value={pronoun}>{_.upperFirst(pronoun)}</option>
 			{/each}
 		</select>
 	</div>
