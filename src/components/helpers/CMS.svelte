@@ -72,14 +72,16 @@
 <style>
 	section,
 	.collapsible-section {
-		margin: 1rem 0;
+		margin: 0 auto 4rem auto;
+		max-width: var(--col-width);
 	}
 
 	summary {
-		background: white;
-		border: 3px solid black;
+		background: transparent;
+		border: 4px solid var(--color-fg);
 		padding: 1rem 2rem;
 		list-style: none;
+		border-radius: var(--border-radius);
 	}
 
 	summary:hover {

@@ -6,15 +6,24 @@
 <section id="hero">
 	<Bear />
 
-	<h1 class="text-outline">{title}</h1>
-	<p class="description">{description}</p>
-	<p class="byline">{@html byline}</p>
-	<p class="others">{@html others}</p>
+	<div class="c">
+		<h1 class="text-outline">{title}</h1>
+		<p class="description">{description}</p>
+		<p class="byline">{@html byline}</p>
+		<p class="others">{@html others}</p>
+	</div>
 </section>
 
 <style>
 	section {
 		position: relative;
+		max-width: 100%;
+		overflow: hidden;
+	}
+
+	.c {
+		max-width: var(--col-width);
+		margin: 0 auto;
 	}
 
 	h1 {

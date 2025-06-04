@@ -34,8 +34,6 @@
 
 <style>
 	article {
-		max-width: 32em;
-		margin: 0 auto;
 		padding: var(--16px);
 	}
 </style>

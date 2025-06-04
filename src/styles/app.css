@@ -26,8 +26,6 @@
 	--font-body: var(--sans);
 	--font-form: var(--serif);
 	--color-bg: var(--color-yellow);
-	/* --color-bg: #fef198; */
-	/* --color-bg: white; */
 	--color-heading: var(--color-fg);
 	--color-fg: var(--color-gray-900);
 	--color-primary: var(--color-red);
@@ -45,6 +43,7 @@
 	--color-input-fg: var(--color-gray-900);
 	--color-placeholder: var(--color-gray-500);
 
+	--col-width: 32em;
 	/* "1" second duration */
 	--1s: 1ms;
 }
@@ -117,7 +116,8 @@ svg {
 }
 
 section {
-	margin-bottom: 2em;
+	margin: 0 auto 4rem auto;
+	max-width: var(--col-width);
 }
 
 @media screen and (max-width: 768px) {
@@ -161,19 +161,24 @@ button:hover,
 }
 
 span.he {
-	background-color: var(--color-blue-light);
-	padding: 0.2em 0.4em;
-	border-radius: 0.25em;
+	color: var(--color-blue-aaa);
+	font-weight: bold;
 }
 
 span.she {
-	background-color: var(--color-pink);
-	padding: 0.2em 0.4em;
-	border-radius: 0.25em;
+	color: var(--color-pink-aaa);
+	font-weight: bold;
 }
 
 span.neutral {
-	background-color: var(--color-gray-200);
-	padding: 0.2em 0.4em;
-	border-radius: 0.25em;
+	color: var(--color-orange-aaa);
+	font-weight: bold;
+}
+
+section#all {
+	max-width: calc(var(--col-width) * 1.5);
+}
+
+section#all h3 {
+	text-align: center;
 }

@@ -168,9 +168,9 @@
 	};
 
 	const pronounColors = {
-		"she/her": "var(--color-pink-light)",
-		"he/him": "var(--color-blue-light)",
-		other: "var(--color-gray-200)"
+		"she/her": "var(--color-pink)",
+		"he/him": "var(--color-blue)",
+		other: "var(--color-gray-700)"
 	};
 	const pronounOrder = ["other", "she/her", "he/him"];
 	const animalCounts = _.countBy(data, "animal_group");
@@ -285,165 +285,163 @@
 	}}
 />
 
-<details>
-	<summary>All Animal Characters</summary>
+<h3>Explore All Animal Characters</h3>
 
-	<div class="controls">
-		<div>
-			<div style="visibility: hidden">Reset</div>
-			<button class="reset" onclick={reset}>Reset</button>
-		</div>
+<div class="controls">
+	<div>
+		<div style="visibility: hidden">Reset</div>
+		<button class="reset" onclick={reset}>Reset</button>
+	</div>
 
-		<Toggle label="Show gender" bind:value={toggleValue} />
+	<Toggle label="Show gender" bind:value={toggleValue} />
 
-		<div>
-			<div>Sort by</div>
-			<select bind:value={sortBy}>
-				{#each ["animal", "gender"] as option}
-					<option value={option}>{_.startCase(option)}</option>
-				{/each}
-			</select>
-		</div>
-
-		<div>
-			<div>Filter by animal</div>
-			<select bind:value={animalFilter}>
-				<option value="">All animals</option>
-				{#each _.orderBy(Object.keys(filteredAnimalCounts()), (d) => filteredAnimalCounts()[d], "desc") as animal_group}
-					<option value={animal_group}>
-						{animal_group} ({filteredAnimalCounts()[animal_group]})
-					</option>
-				{/each}
-			</select>
-		</div>
-
-		<div>
-			<div>Filter by pronoun</div>
-			<select bind:value={pronounFilter}>
-				<option value="">All pronouns</option>
-				{#each ["he/him", "she/her", "other"] as pronoun}
-					<option value={pronoun}>{pronoun}</option>
-				{/each}
-			</select>
-		</div>
+	<div>
+		<div>Sort by</div>
+		<select bind:value={sortBy}>
+			{#each ["animal", "gender"] as option}
+				<option value={option}>{_.startCase(option)}</option>
+			{/each}
+		</select>
 	</div>
 
 	<div>
-		<BookAutocomplete
-			options={bookTitles}
-			bind:bindValue={titleFilter}
-			placeholder="Search by title"
-		/>
+		<div>Filter by animal</div>
+		<select bind:value={animalFilter}>
+			<option value="">All animals</option>
+			{#each _.orderBy(Object.keys(filteredAnimalCounts()), (d) => filteredAnimalCounts()[d], "desc") as animal_group}
+				<option value={animal_group}>
+					{animal_group} ({filteredAnimalCounts()[animal_group]})
+				</option>
+			{/each}
+		</select>
 	</div>
-	<br />
 
-	<div class="bar-labels">
-		{#each pronounBreakdown() as { pronoun, percent }}
-			<div class="bar-label">
-				<strong>{pronoun}</strong>: {percent.toFixed(1)}%
+	<div>
+		<div>Filter by pronoun</div>
+		<select bind:value={pronounFilter}>
+			<option value="">All pronouns</option>
+			{#each ["he/him", "she/her", "other"] as pronoun}
+				<option value={pronoun}>{pronoun}</option>
+			{/each}
+		</select>
+	</div>
+</div>
+
+<div>
+	<BookAutocomplete
+		options={bookTitles}
+		bind:bindValue={titleFilter}
+		placeholder="Search by title"
+	/>
+</div>
+<br />
+
+<div class="bar-labels">
+	{#each pronounBreakdown() as { pronoun, percent }}
+		<div class="bar-label">
+			<strong>{pronoun}</strong>: {percent.toFixed(1)}%
+		</div>
+	{/each}
+</div>
+
+<div class="bar">
+	{#each pronounBreakdown() as { pronoun, percent, color }}
+		<div
+			class="bar-segment"
+			style={`width: ${percent}%; background: ${color}`}
+			title={`${pronoun}: ${percent.toFixed(1)}%`}
+		/>
+	{/each}
+</div>
+
+<div
+	class="tooltip"
+	class:visible={hoveredId !== null}
+	style="top: {tooltipCoords.y}px; left: {tooltipCoords.x}px;"
+>
+	<span
+		class={`pronoun ${hoveredData?.pronoun === "she/her" ? "she" : hoveredData?.pronoun === "he/him" ? "he" : "neutral"}`}
+		style:background={pronounColors[hoveredData?.pronoun] || null}
+	>
+		{hoveredData?.pronoun}
+	</span>
+	<div class="animal-name">{hoveredData?.animal_group}</div>
+	<a
+		href={hoveredData?.goodreads_link}
+		target="_blank"
+		rel="noopener noreferrer"
+		onclick={(e) => e.stopPropagation()}
+		><img class="cover" src={hoveredData?.book_cover_image} /></a
+	>
+	<div class="title">
+		{hoveredData?.title}
+	</div>
+	<div class="author">By {hoveredData?.author}</div>
+	<div class="pub_date">{hoveredData?.pub_year}</div>
+</div>
+
+{#if animalFilter}
+	{#each ["he/him", "she/her", "other"] as pronoun}
+		{#if groupedByPronoun()[pronoun]}
+			<h3>{pronoun}</h3>
+			<div class="grid">
+				{#each groupedByPronoun()[pronoun] as d, i}
+					<div
+						id={d.id}
+						class="animal"
+						class:show-gender={toggleValue === "on"}
+						style:background={toggleValue === "on"
+							? pronounColors[d.pronoun] || "var(--color-gray-700)"
+							: null}
+						style={`--rotate: ${_.sample([-5, 5])}deg`}
+						onmouseenter={onMouseEnter}
+						onmouseleave={() => {
+							if (selectedId === null) hoveredId = null;
+						}}
+					>
+						{#if haveImages.includes(d.animal_group)}
+							<img
+								class="icon"
+								src={`assets/animals/${d.animal_group}.png`}
+								alt={d.animal_group}
+							/>
+						{:else}
+							{d.animal_group}
+						{/if}
+					</div>
+				{/each}
+			</div>
+		{/if}
+	{/each}
+{:else}
+	<div class="grid">
+		{#each filteredSortedData as d, i}
+			<div
+				id={d.id}
+				class="animal"
+				class:show-gender={toggleValue === "on"}
+				style:background={toggleValue === "on"
+					? pronounColors[d.pronoun] || "var(--color-gray-200)"
+					: null}
+				style={`--rotate: ${_.sample([-5, 5])}deg`}
+				onmouseenter={onMouseEnter}
+				onmouseleave={() => {
+					if (selectedId === null) hoveredId = null;
+				}}
+			>
+				{#if haveImages.includes(d.animal_group)}
+					<img
+						class="icon"
+						src={`assets/animals/${d.animal_group}.png`}
+						alt={d.animal_group}
+					/>
+				{:else}
+					{d.animal_group}
+				{/if}
 			</div>
 		{/each}
 	</div>
-
-	<div class="bar">
-		{#each pronounBreakdown() as { pronoun, percent, color }}
-			<div
-				class="bar-segment"
-				style={`width: ${percent}%; background: ${color}`}
-				title={`${pronoun}: ${percent.toFixed(1)}%`}
-			/>
-		{/each}
-	</div>
-
-	<div
-		class="tooltip"
-		class:visible={hoveredId !== null}
-		style="top: {tooltipCoords.y}px; left: {tooltipCoords.x}px;"
-	>
-		<span
-			class={`pronoun ${hoveredData?.pronoun === "she/her" ? "she" : hoveredData?.pronoun === "he/him" ? "he" : "neutral"}`}
-			style:background={pronounColors[hoveredData?.pronoun] || null}
-		>
-			{hoveredData?.pronoun}
-		</span>
-		<div class="animal-name">{hoveredData?.animal_group}</div>
-		<a
-			href={hoveredData?.goodreads_link}
-			target="_blank"
-			rel="noopener noreferrer"
-			onclick={(e) => e.stopPropagation()}
-			><img class="cover" src={hoveredData?.book_cover_image} /></a
-		>
-		<div class="title">
-			{hoveredData?.title}
-		</div>
-		<div class="author">By {hoveredData?.author}</div>
-		<div class="pub_date">{hoveredData?.pub_year}</div>
-	</div>
-
-	{#if animalFilter}
-		{#each ["he/him", "she/her", "other"] as pronoun}
-			{#if groupedByPronoun()[pronoun]}
-				<h3>{pronoun}</h3>
-				<div class="grid">
-					{#each groupedByPronoun()[pronoun] as d, i}
-						<div
-							id={d.id}
-							class="animal"
-							class:show-gender={toggleValue === "on"}
-							style:background={toggleValue === "on"
-								? pronounColors[d.pronoun] || "var(--color-gray-200)"
-								: null}
-							style={`--rotate: ${_.sample([-5, 5])}deg`}
-							onmouseenter={onMouseEnter}
-							onmouseleave={() => {
-								if (selectedId === null) hoveredId = null;
-							}}
-						>
-							{#if haveImages.includes(d.animal_group)}
-								<img
-									class="icon"
-									src={`assets/animals/${d.animal_group}.png`}
-									alt={d.animal_group}
-								/>
-							{:else}
-								{d.animal_group}
-							{/if}
-						</div>
-					{/each}
-				</div>
-			{/if}
-		{/each}
-	{:else}
-		<div class="grid">
-			{#each filteredSortedData as d, i}
-				<div
-					id={d.id}
-					class="animal"
-					class:show-gender={toggleValue === "on"}
-					style:background={toggleValue === "on"
-						? pronounColors[d.pronoun] || "var(--color-gray-200)"
-						: null}
-					style={`--rotate: ${_.sample([-5, 5])}deg`}
-					onmouseenter={onMouseEnter}
-					onmouseleave={() => {
-						if (selectedId === null) hoveredId = null;
-					}}
-				>
-					{#if haveImages.includes(d.animal_group)}
-						<img
-							class="icon"
-							src={`assets/animals/${d.animal_group}.png`}
-							alt={d.animal_group}
-						/>
-					{:else}
-						{d.animal_group}
-					{/if}
-				</div>
-			{/each}
-		</div>
-	{/if}
-</details>
+{/if}
 
 <style>
 	.grid {
@@ -537,15 +535,20 @@
 	.bar {
 		display: flex;
 		width: 100%;
-		height: 20px;
+		height: 32px;
 		margin: 2rem 0;
-		border-radius: 4px;
+		border-radius: var(--border-radius);
 		overflow: hidden;
-		box-shadow: 0 0 0 1px black;
+		border: 4px solid var(--color-fg);
 	}
 
 	.bar-segment {
 		height: 100%;
+		border-right: 4px solid var(--color-fg);
+	}
+
+	.bar-segment:last-child {
+		border-right: none;
 	}
 
 	.bar-labels {

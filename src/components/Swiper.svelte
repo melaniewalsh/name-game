@@ -166,16 +166,16 @@
 	}
 
 	img.he {
-		border: 12px solid var(--color-blue-light);
+		border: 12px solid var(--color-blue);
 	}
 
 	img.she {
-		border: 12px solid var(--color-pink-light);
+		border: 12px solid var(--color-pink);
 	}
 
 	.pronoun {
 		position: absolute;
-		bottom: 0;
+		bottom: 10px;
 		background: var(--color-gray-200);
 		border: 3px solid black;
 		text-transform: uppercase;
@@ -185,11 +185,11 @@
 	}
 
 	.pronoun.he {
-		background: var(--color-blue-light);
+		background: var(--color-blue);
 	}
 
 	.pronoun.she {
-		background: var(--color-pink-light);
+		background: var(--color-pink);
 	}
 
 	.swiper-examples .outer {

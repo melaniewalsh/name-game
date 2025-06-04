@@ -163,13 +163,14 @@
 <style>
 	footer {
 		margin-top: 100px;
+		padding-top: 16px;
 		background: var(--color-blue-light);
 	}
 
 	.c {
 		max-width: calc(var(--width-column-wide, 1280px) - var(--margin, 16px) * 2);
 		padding: 16px;
-		margin: 32px auto 100px auto;
+		margin: 32px auto 0 auto;
 		font-family: var(--sans);
 	}
 

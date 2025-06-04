@@ -25,6 +25,8 @@
   --color-gray-1000: rgb(25, 25, 25);
   --color-blue: #66A7DB;
   --color-blue-light: #A3D1ED;
+  --color-blue-aaa: #246396;
+  --color-pink-aaa: #a2413d;
   --color-yellow: #FFD85D;
   --color-yellow-dark: #F6CD41;
   --color-green: #7EAF54;
@@ -33,6 +35,7 @@
   --color-pink-light: #F3D3D0;
   --color-orange-light: #F39C4B;
   --color-orange: #EF813E;
+  --color-orange-aaa: #9e450e;
   --12px: 0.75rem;
   --14px: 0.875rem;
   --16px: 1rem;

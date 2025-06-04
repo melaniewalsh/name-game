@@ -45,6 +45,12 @@
 		"blue-light": {
 			"value": "#A3D1ED"
 		},
+		"blue-aaa": {
+			"value": "#246396"
+		},
+		"pink-aaa": {
+			"value": "#a2413d"
+		},
 		"yellow": {
 			"value": "#FFD85D"
 		},
@@ -68,6 +74,9 @@
 		},
 		"orange": {
 			"value": "#EF813E"
+		},
+		"orange-aaa": {
+			"value": "#9e450e"
 		}
 	}
 }

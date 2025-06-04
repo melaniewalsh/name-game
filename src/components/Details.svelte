@@ -16,12 +16,16 @@
 <style>
 	details {
 		padding: var(--16px);
-		background: var(--color-fg);
-		color: var(--color-white);
+		background: var(--color-button-bg);
+		color: var(--color-button-fg);
 		border-radius: var(--border-radius);
 	}
 
 	summary {
 		cursor: pointer;
+	}
+
+	div {
+		font-size: var(--16px);
 	}
 </style>

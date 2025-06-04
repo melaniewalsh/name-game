@@ -24,6 +24,8 @@
     "gray-1000": "rgb(25, 25, 25)",
     "blue": "#66A7DB",
     "blue-light": "#A3D1ED",
+    "blue-aaa": "#246396",
+    "pink-aaa": "#a2413d",
     "yellow": "#FFD85D",
     "yellow-dark": "#F6CD41",
     "green": "#7EAF54",
@@ -31,7 +33,8 @@
     "pink": "#D79592",
     "pink-light": "#F3D3D0",
     "orange-light": "#F39C4B",
-    "orange": "#EF813E"
+    "orange": "#EF813E",
+    "orange-aaa": "#9e450e"
   },
   "": {
     "12px": "0.75rem",
