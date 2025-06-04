@@ -483,9 +483,9 @@
 	.icon {
 	}
 
-	/* .show-gender .icon {
+	.show-gender .icon {
 		filter: grayscale(1);
-	} */
+	}
 
 	.tooltip {
 		z-index: 1000;
