@@ -25,7 +25,6 @@
 	let oneLine = id === "all";
 	let fullWidth = $state(0);
 	let chartWidth = $derived(fullWidth - margin.left - margin.right);
-	let selectedAnimal = $state(data[0].animal);
 
 	const xScale = $derived(
 		scaleLinear().domain([0, 100]).range([0, chartWidth])
@@ -60,7 +59,10 @@
 					<div class="line">
 						{#each data as d, i}
 							<div class="animal" style:left={`${xScale(xGet(d))}px`}>
-								{d.emoji}
+								<img
+									src={`assets/${d.source === "Books" ? "book" : d.source === "ChatGPT" ? "robot" : "survey"}.png`}
+									alt="{d.source} illustration"
+								/>
 							</div>
 						{/each}
 					</div>
@@ -80,9 +82,6 @@
 									alt="{d.animal} illustration"
 								/>
 							</div>
-							{#if id === "books" && selectedAnimal === d.animal}
-								<!-- <Shelf animal={selectedAnimal} books={shelfData} /> -->
-							{/if}
 						</div>
 					</div>
 				{/each}
