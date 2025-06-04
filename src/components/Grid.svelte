@@ -4,147 +4,6 @@
 	import _ from "lodash";
 	import BookAutocomplete from "./BookAutocomplete.svelte";
 
-	const haveImages = [
-		"bear",
-		"bird",
-		"cat",
-		"dog",
-		"duck",
-		"elephant",
-		"fox",
-		"frog",
-		"monkey",
-		"mouse",
-		"pig",
-		"rabbit",
-		"wolf",
-		"dinosaur",
-		"lion",
-		"owl",
-		"spider",
-		"hen",
-		"fish",
-		"cow",
-		"reindeer",
-		"crow",
-		"goat",
-		"kangaroo",
-		"horse",
-		"snake",
-		"aardvark",
-		"badger",
-		"llama",
-		"crocodile",
-		"squirrel",
-		"goose",
-		"turtle",
-		"tiger",
-		"fly",
-		"penguin",
-		"raccoon",
-		"sheep",
-		"whale",
-		"worm",
-		"crab",
-		"deer",
-		"donkey",
-		"hippo",
-		"moose",
-		"robin",
-		"skunk",
-		"toad",
-		"bat",
-		"chicken",
-		"cricket",
-		"hedgehog",
-		"ladybug",
-		"ox",
-		"rat",
-		"bee",
-		"butterfly",
-		"hog",
-		"chameleon",
-		"alligator",
-		"rooster",
-		"ostrich",
-		"lizard",
-		"mole",
-		"pigeon",
-		"beaver",
-		"sparrow",
-		"rhino",
-		"boa constrictor",
-		"camel",
-		"caterpillar",
-		"chipmunk",
-		"clam",
-		"cobra",
-		"eagle",
-		"firefly",
-		"giraffe",
-		"gorilla",
-		"jellyfish",
-		"hyena",
-		"koala",
-		"opossum",
-		"newt",
-		"praying mantis",
-		"walking stick",
-		"seal",
-		"snail",
-		"stink bug",
-		"tortoise",
-		"turkey",
-		"zebra",
-		"eel",
-		"flea",
-		"armadillo",
-		"warthog",
-		"flamingo",
-		"hawk",
-		"iguana",
-		"baboon",
-		"chimpanzee",
-		"dragonfly",
-		"jaguar",
-		"leopard",
-		"dolphin",
-		"pony",
-		"lobster",
-		"guinea pig",
-		"luna moth",
-		"inchworm",
-		"otter",
-		"octopus",
-		"narwhal",
-		"starfish",
-		"sloth",
-		"porcupine",
-		"orangutan",
-		"mosquito",
-		"squid",
-		"swan",
-		"meerkat",
-		"walrus",
-		"vulture",
-		"wolverine",
-		"moth",
-		"yellow jacket",
-		"woodchuck",
-		"grasshopper",
-		"mongoose",
-		"mink",
-		"falcon",
-		"ape",
-		"bug",
-		"stag beetle",
-		"lemming",
-		"gecko",
-		"groundhog",
-		"muskrat",
-		"bug"
-	];
-
 	let selectedId = $state(null);
 
 	let titleFilter = $state(null);
@@ -227,9 +86,10 @@
 					filteredData,
 					[
 						(d) => pronounCounts[d.pronoun],
+						(d) => animalCounts[d.animal_group],
 						(d) => pronounOrder.indexOf(d.pronoun)
 					],
-					["desc", "asc"]
+					["desc", "desc", "asc"]
 				).map((d, i) => ({
 					...d,
 					id: i
@@ -276,14 +136,6 @@
 		tooltipCoords = { x, y };
 	};
 </script>
-
-<!-- global click to clear selected tooltip -->
-<svelte:window
-	on:click={() => {
-		selectedId = null;
-		hoveredId = null;
-	}}
-/>
 
 <h3>Explore All Animal Characters</h3>
 
@@ -399,15 +251,11 @@
 							if (selectedId === null) hoveredId = null;
 						}}
 					>
-						{#if haveImages.includes(d.animal_group)}
-							<img
-								class="icon"
-								src={`assets/animals/${d.animal_group}.png`}
-								alt={d.animal_group}
-							/>
-						{:else}
-							{d.animal_group}
-						{/if}
+						<img
+							class="icon"
+							src={`assets/animals/${d.animal_group}.png`}
+							alt={d.animal_group}
+						/>
 					</div>
 				{/each}
 			</div>
@@ -429,15 +277,11 @@
 					if (selectedId === null) hoveredId = null;
 				}}
 			>
-				{#if haveImages.includes(d.animal_group)}
-					<img
-						class="icon"
-						src={`assets/animals/${d.animal_group}.png`}
-						alt={d.animal_group}
-					/>
-				{:else}
-					{d.animal_group}
-				{/if}
+				<img
+					class="icon"
+					src={`assets/animals/${d.animal_group}.png`}
+					alt={d.animal_group}
+				/>
 			</div>
 		{/each}
 	</div>
@@ -460,6 +304,15 @@
 		flex-wrap: wrap;
 		margin-bottom: 2rem;
 		font-size: var(--20px);
+	}
+
+	select {
+		border: 4px solid black;
+	}
+
+	button,
+	select {
+		font-family: var(--sans);
 	}
 
 	.animal {
@@ -504,6 +357,10 @@
 
 	.tooltip.visible {
 		display: flex;
+	}
+
+	.pronoun {
+		padding: 0 4px;
 	}
 
 	.animal-name {
