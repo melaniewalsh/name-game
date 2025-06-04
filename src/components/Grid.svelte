@@ -337,21 +337,34 @@
 <br />
 
 <div class="bar-labels">
-	{#each pronounBreakdown() as { pronoun, percent }}
-		<div class="bar-label">
-			<strong>{pronoun}</strong>: {percent.toFixed(1)}%
-		</div>
-	{/each}
+	{#if pronounBreakdown().length > 0}
+		{#each pronounBreakdown() as { pronoun, percent }}
+			<div class="bar-label">
+				<strong>{pronoun}</strong>: {percent.toFixed(1)}%
+			</div>
+		{/each}
+	{:else}
+		<!-- empty labels placeholder -->
+		<div class="bar-label">0.0%</div>
+	{/if}
 </div>
 
 <div class="bar">
-	{#each pronounBreakdown() as { pronoun, percent, color }}
+	{#if pronounBreakdown().length > 0}
+		{#each pronounBreakdown() as { pronoun, percent, color }}
+			<div
+				class="bar-segment"
+				style={`width: ${percent}%; background: ${color}`}
+				title={`${pronoun}: ${percent.toFixed(1)}%`}
+			/>
+		{/each}
+	{:else}
+		<!-- Invisible placeholders to keep height -->
 		<div
 			class="bar-segment"
-			style={`width: ${percent}%; background: ${color}`}
-			title={`${pronoun}: ${percent.toFixed(1)}%`}
-		/>
-	{/each}
+			style="flex: 1; background: var(--color-gray-300); opacity: 0.5;"
+		></div>
+	{/if}
 </div>
 
 <div
@@ -380,67 +393,81 @@
 	<div class="pub_date">{hoveredData?.pub_year}</div>
 </div>
 
-{#if animalFilter}
-	{#each ["he/him", "she/her", "other"] as pronoun}
-		{#if groupedByPronoun()[pronoun]}
-			<h3>{pronoun}</h3>
-			<div class="grid">
-				{#each groupedByPronoun()[pronoun] as d, i}
-					<div
-						id={d.id}
-						class="animal"
-						class:show-gender={toggleValue === "on"}
-						style:background={toggleValue === "on"
-							? pronounColors[d.pronoun] || "var(--color-gray-700)"
-							: null}
-						style={`--rotate: ${_.sample([-5, 5])}deg`}
-						onmouseenter={onMouseEnter}
-						onmouseleave={() => {
-							if (selectedId === null) hoveredId = null;
-						}}
-					>
-						{#if haveImages.includes(d.animal_group)}
-							<img
-								class="icon"
-								src={`assets/animals/${d.animal_group}.png`}
-								alt={d.animal_group}
-							/>
-						{:else}
-							{d.animal_group}
-						{/if}
-					</div>
-				{/each}
-			</div>
-		{/if}
-	{/each}
-{:else}
-	<div class="grid">
-		{#each filteredSortedData as d, i}
-			<div
-				id={d.id}
-				class="animal"
-				class:show-gender={toggleValue === "on"}
-				style:background={toggleValue === "on"
-					? pronounColors[d.pronoun] || "var(--color-gray-200)"
-					: null}
-				style={`--rotate: ${_.sample([-5, 5])}deg`}
-				onmouseenter={onMouseEnter}
-				onmouseleave={() => {
-					if (selectedId === null) hoveredId = null;
-				}}
-			>
-				{#if haveImages.includes(d.animal_group)}
-					<img
-						class="icon"
-						src={`assets/animals/${d.animal_group}.png`}
-						alt={d.animal_group}
-					/>
-				{:else}
-					{d.animal_group}
-				{/if}
-			</div>
+{#if filteredSortedData.length > 0}
+	{#if animalFilter}
+		{#each ["he/him", "she/her", "other"] as pronoun}
+			{#if groupedByPronoun()[pronoun]?.length > 0}
+				<h3>{pronoun}</h3>
+				<div class="grid">
+					{#each groupedByPronoun()[pronoun] as d, i}
+						<div
+							id={d.id}
+							class="animal"
+							class:show-gender={toggleValue === "on"}
+							style:background={toggleValue === "on"
+								? pronounColors[d.pronoun] || "var(--color-gray-700)"
+								: null}
+							style={`--rotate: ${_.sample([-5, 5])}deg`}
+							onmouseenter={onMouseEnter}
+							onmouseleave={() => {
+								if (selectedId === null) hoveredId = null;
+							}}
+						>
+							{#if haveImages.includes(d.animal_group)}
+								<img
+									class="icon"
+									src={`assets/animals/${d.animal_group}.png`}
+									alt={d.animal_group}
+								/>
+							{:else}
+								{d.animal_group}
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
 		{/each}
+	{:else}
+		<div class="grid">
+			{#each filteredSortedData as d, i}
+				<div
+					id={d.id}
+					class="animal"
+					class:show-gender={toggleValue === "on"}
+					style:background={toggleValue === "on"
+						? pronounColors[d.pronoun] || "var(--color-gray-200)"
+						: null}
+					style={`--rotate: ${_.sample([-5, 5])}deg`}
+					onmouseenter={onMouseEnter}
+					onmouseleave={() => {
+						if (selectedId === null) hoveredId = null;
+					}}
+				>
+					{#if haveImages.includes(d.animal_group)}
+						<img
+							class="icon"
+							src={`assets/animals/${d.animal_group}.png`}
+							alt={d.animal_group}
+						/>
+					{:else}
+						{d.animal_group}
+					{/if}
+				</div>
+			{/each}
+		</div>
+	{/if}
+{:else}
+	<div>
+		<img
+			class="icon"
+			src="assets/animals/no-animal.png"
+			alt="No animal found"
+			style="width: 100px; margin: auto;"
+		/>
 	</div>
+	<p style="text-align: center; font-style: italic; margin-top: 0.5rem;">
+		No animals found.
+	</p>
 {/if}
 
 <style>
