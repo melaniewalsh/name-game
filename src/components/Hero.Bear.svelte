@@ -1,18 +1,18 @@
 <script>
 	import _ from "lodash";
 
-	let currentIndex = $state(8);
+	let currentIndex = $state(0);
 	let interval;
 	const accessories = [
-		{ id: "bowtie", top: "66%", width: 90 },
-		{ id: "glasses", top: "34%", left: "51%", width: 150 },
-		{ id: "mustache", top: "50%", left: "51%", width: 120 },
-		{ id: "cap", top: "10%" },
+		{ id: "bowtie", top: "83%", width: 90 },
+		{ id: "glasses", top: "42%", left: "51%", width: 150 },
+		{ id: "mustache", top: "62%", left: "51%", width: 120 },
+		{ id: "cap", top: "12%" },
 		{ id: "tophat", top: "4%" },
-		{ id: "girl_glasses", top: "35%", left: "50.5%", width: 160 },
-		{ id: "hair", top: "26%", left: "50.5%", width: 250 },
-		{ id: "lips", top: "58%", left: "50.8%", width: 40 },
-		{ id: "tiara", top: "14%", left: "49%", width: 90 }
+		{ id: "girl_glasses", top: "44%", left: "50.5%", width: 160 },
+		{ id: "hair", top: "32%", left: "50.5%", width: 250 },
+		{ id: "lips", top: "74%", left: "50.8%", width: 40 },
+		{ id: "tiara", top: "19%", left: "49%", width: 90 }
 	];
 
 	$effect(() => {
@@ -28,25 +28,24 @@
 	const getPosition = (i) => {
 		const total = accessories.length;
 		const diff = (i - currentIndex + total) % total;
-
 		const visualIndex = diff > total / 2 ? diff - total : diff;
 
-		if (visualIndex < -3) return -150; // if you want to hide offscreen
-		if (visualIndex > 3) return 150;
+		if (visualIndex <= -3) return -100;
+		if (visualIndex >= 3) return 200;
 
-		return visualIndex * 50 + 50;
+		return (visualIndex + 1) * 50;
 	};
 </script>
 
 <div class="wrapper">
 	<img class="bear" src="assets/hero/bear.png" />
 
-	{#each _.shuffle(accessories) as { id, top, left, width }, i}
+	{#each accessories as { id, top, left, width }, i}
 		{@const active = i === currentIndex}
 		<img
 			class="accessory"
 			class:active
-			class:hidden={getPosition(i) >= 150 || getPosition(i) <= -150}
+			class:hidden={getPosition(i) > 150 || getPosition(i) < -50}
 			alt={id}
 			src={`assets/hero/${id}.png`}
 			style:width={width ? `${width}px` : "100px"}
@@ -58,7 +57,7 @@
 
 <style>
 	.wrapper {
-		height: 320px;
+		height: 250px;
 		margin-top: 3rem;
 		position: relative;
 		display: flex;
@@ -66,18 +65,13 @@
 		align-items: center;
 		width: 100%;
 		max-width: 600px;
-		margin: 0 auto;
-		/* width: 200px;
-		margin: 0 auto; */
+		margin: 0 auto 3rem auto;
 	}
 
 	.bear {
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
+		bottom: 0;
 		position: absolute;
 		width: 200px;
-		/* width: 100%; */
 	}
 
 	.accessory {
