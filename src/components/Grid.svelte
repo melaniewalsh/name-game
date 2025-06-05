@@ -4,147 +4,6 @@
 	import _ from "lodash";
 	import BookAutocomplete from "./BookAutocomplete.svelte";
 
-	const haveImages = [
-		"bear",
-		"bird",
-		"cat",
-		"dog",
-		"duck",
-		"elephant",
-		"fox",
-		"frog",
-		"monkey",
-		"mouse",
-		"pig",
-		"rabbit",
-		"wolf",
-		"dinosaur",
-		"lion",
-		"owl",
-		"spider",
-		"hen",
-		"fish",
-		"cow",
-		"reindeer",
-		"crow",
-		"goat",
-		"kangaroo",
-		"horse",
-		"snake",
-		"aardvark",
-		"badger",
-		"llama",
-		"crocodile",
-		"squirrel",
-		"goose",
-		"turtle",
-		"tiger",
-		"fly",
-		"penguin",
-		"raccoon",
-		"sheep",
-		"whale",
-		"worm",
-		"crab",
-		"deer",
-		"donkey",
-		"hippo",
-		"moose",
-		"robin",
-		"skunk",
-		"toad",
-		"bat",
-		"chicken",
-		"cricket",
-		"hedgehog",
-		"ladybug",
-		"ox",
-		"rat",
-		"bee",
-		"butterfly",
-		"hog",
-		"chameleon",
-		"alligator",
-		"rooster",
-		"ostrich",
-		"lizard",
-		"mole",
-		"pigeon",
-		"beaver",
-		"sparrow",
-		"rhino",
-		"boa constrictor",
-		"camel",
-		"caterpillar",
-		"chipmunk",
-		"clam",
-		"cobra",
-		"eagle",
-		"firefly",
-		"giraffe",
-		"gorilla",
-		"jellyfish",
-		"hyena",
-		"koala",
-		"opossum",
-		"newt",
-		"praying mantis",
-		"walking stick",
-		"seal",
-		"snail",
-		"stink bug",
-		"tortoise",
-		"turkey",
-		"zebra",
-		"eel",
-		"flea",
-		"armadillo",
-		"warthog",
-		"flamingo",
-		"hawk",
-		"iguana",
-		"baboon",
-		"chimpanzee",
-		"dragonfly",
-		"jaguar",
-		"leopard",
-		"dolphin",
-		"pony",
-		"lobster",
-		"guinea pig",
-		"luna moth",
-		"inchworm",
-		"otter",
-		"octopus",
-		"narwhal",
-		"starfish",
-		"sloth",
-		"porcupine",
-		"orangutan",
-		"mosquito",
-		"squid",
-		"swan",
-		"meerkat",
-		"walrus",
-		"vulture",
-		"wolverine",
-		"moth",
-		// "yellow jacket",
-		"woodchuck",
-		"grasshopper",
-		"mongoose",
-		"mink",
-		"falcon",
-		"ape",
-		"bug",
-		"stag beetle",
-		"lemming",
-		"gecko",
-		"groundhog",
-		"muskrat",
-		"bug"
-	];
-
 	let selectedId = $state(null);
 
 	let titleFilter = $state(null);
@@ -182,18 +41,46 @@
 	let pronounFilter = $state("");
 	let hoveredId = $state(null);
 	let tooltipCoords = $state({ x: 0, y: 0 });
+
+	// Filter by search term more expansively — so author names come up if searched too
 	let filteredData = $derived(
 		data.filter((d) => {
-			const norm = normalizePronoun(d.pronoun);
-			return (
-				(!animalFilter || d.animal_group === animalFilter) &&
-				(!pronounFilter || normalizePronoun(d.pronoun) === pronounFilter) &&
-				(!titleFilter ||
-					d.title.toLowerCase().includes(titleFilter.toLowerCase()))
-			);
+			// Only show items that match the filters (or show all if no filter)
+			const matchesAnimalFilter =
+				!animalFilter || d.animal_group === animalFilter;
+			const matchesPronounFilter =
+				!pronounFilter || normalizePronoun(d.pronoun) === pronounFilter;
+
+			let matchesTitleFilter = true;
+			if (titleFilter) {
+				const searchTerm = titleFilter.toLowerCase();
+
+				if (
+					searchTerm.includes(" — ") &&
+					searchTerm.includes("(") &&
+					searchTerm.includes(")")
+				) {
+					// User clicked a formatted option like "Good Night Moon (1947) — Margaret Wise Brown"
+					const titlePart = titleFilter.split("(")[0].trim();
+					matchesTitleFilter = d.title
+						.toLowerCase()
+						.includes(titlePart.toLowerCase());
+				} else {
+					// User is typing freely - search both title and author
+					const titleContainsSearch = d.title
+						.toLowerCase()
+						.includes(searchTerm);
+					const authorContainsSearch =
+						d.author && d.author.toLowerCase().includes(searchTerm);
+					matchesTitleFilter = titleContainsSearch || authorContainsSearch;
+				}
+			}
+
+			return matchesAnimalFilter && matchesPronounFilter && matchesTitleFilter;
 		})
 	);
 
+	// Add pub year and author to book title in search dropdown
 	let bookTitles = $derived(
 		[
 			...new Set(
@@ -204,7 +91,10 @@
 							(!pronounFilter || normalizePronoun(d.pronoun) === pronounFilter)
 						);
 					})
-					.map((d) => d.title.split("(")[0].trim())
+					.map(
+						(d) =>
+							`${d.title.split("(")[0].trim()} (${d.pub_year}) — ${d.author || "Unknown"}`
+					)
 			)
 		].sort()
 	);
@@ -227,9 +117,10 @@
 					filteredData,
 					[
 						(d) => pronounCounts[d.pronoun],
+						(d) => animalCounts[d.animal_group],
 						(d) => pronounOrder.indexOf(d.pronoun)
 					],
-					["desc", "asc"]
+					["desc", "desc", "asc"]
 				).map((d, i) => ({
 					...d,
 					id: i
@@ -241,12 +132,15 @@
 			d.pronoun === "he/him" || d.pronoun === "she/her" ? d.pronoun : "other"
 		);
 		const total = _.sum(Object.values(counts));
-		return Object.entries(counts).map(([pronoun, count]) => ({
-			pronoun,
-			count,
-			percent: (count / total) * 100,
-			color: pronounColors[pronoun] || pronounColors.other
-		}));
+
+		return Object.entries(counts)
+			.map(([pronoun, count]) => ({
+				pronoun,
+				count,
+				percent: (count / total) * 100,
+				color: pronounColors[pronoun] || pronounColors.other
+			}))
+			.sort((a, b) => b.percent - a.percent); // Sort by percentage, highest first
 	});
 
 	let hoveredData = $derived(
@@ -277,14 +171,6 @@
 	};
 </script>
 
-<!-- global click to clear selected tooltip -->
-<svelte:window
-	on:click={() => {
-		selectedId = null;
-		hoveredId = null;
-	}}
-/>
-
 <h3>Explore All Animal Characters</h3>
 
 <div class="controls">
@@ -299,7 +185,7 @@
 		<div>Sort by</div>
 		<select bind:value={sortBy}>
 			{#each ["animal", "gender"] as option}
-				<option value={option}>{_.startCase(option)}</option>
+				<option value={option}>{_.upperFirst(option)}</option>
 			{/each}
 		</select>
 	</div>
@@ -310,7 +196,7 @@
 			<option value="">All animals</option>
 			{#each _.orderBy(Object.keys(filteredAnimalCounts()), (d) => filteredAnimalCounts()[d], "desc") as animal_group}
 				<option value={animal_group}>
-					{animal_group} ({filteredAnimalCounts()[animal_group]})
+					{_.upperFirst(animal_group)} ({filteredAnimalCounts()[animal_group]})
 				</option>
 			{/each}
 		</select>
@@ -321,7 +207,7 @@
 		<select bind:value={pronounFilter}>
 			<option value="">All pronouns</option>
 			{#each ["he/him", "she/her", "other"] as pronoun}
-				<option value={pronoun}>{pronoun}</option>
+				<option value={pronoun}>{_.upperFirst(pronoun)}</option>
 			{/each}
 		</select>
 	</div>
@@ -489,6 +375,15 @@
 		font-size: var(--20px);
 	}
 
+	select {
+		border: 4px solid black;
+	}
+
+	button,
+	select {
+		font-family: var(--sans);
+	}
+
 	.animal {
 		display: flex;
 		justify-content: center;
@@ -510,9 +405,9 @@
 	.icon {
 	}
 
-	/* .show-gender .icon {
+	.show-gender .icon {
 		filter: grayscale(1);
-	} */
+	}
 
 	.tooltip {
 		z-index: 1000;
@@ -531,6 +426,10 @@
 
 	.tooltip.visible {
 		display: flex;
+	}
+
+	.pronoun {
+		padding: 0 4px;
 	}
 
 	.animal-name {

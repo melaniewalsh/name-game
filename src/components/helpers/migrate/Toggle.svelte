@@ -54,7 +54,7 @@
 	.toggle--inner button {
 		padding: 0.5em;
 		background-color: var(--color-white);
-		border: 2px solid var(--color-gray-900);
+		border: 4px solid var(--color-gray-900);
 	}
 
 	.toggle--inner button span {

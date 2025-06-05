@@ -1,6 +1,7 @@
 <script>
 	import arrowLeft from "$svg/arrow-left.svg";
 	import arrowRight from "$svg/arrow-right.svg";
+
 	const { examples, pre } = $props();
 
 	const hasImages = examples.every((example) => example.src);
@@ -206,21 +207,11 @@
 	}
 
 	:global(.swiper-slide-shadow-left) {
-		background: rgba(91, 99, 75, 0.3);
-		background: linear-gradient(
-			to left,
-			rgba(91, 99, 75, 0),
-			rgba(91, 99, 75, 0.3)
-		);
+		background: transparent;
 	}
 
 	:global(.swiper-slide-shadow-right) {
-		background: rgba(91, 99, 75, 0.3);
-		background: linear-gradient(
-			to left,
-			rgba(91, 99, 75, 0.3),
-			rgba(91, 99, 75, 0)
-		);
+		background: transparent;
 	}
 
 	button {
