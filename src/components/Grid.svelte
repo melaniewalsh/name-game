@@ -132,12 +132,15 @@
 			d.pronoun === "he/him" || d.pronoun === "she/her" ? d.pronoun : "other"
 		);
 		const total = _.sum(Object.values(counts));
-		return Object.entries(counts).map(([pronoun, count]) => ({
-			pronoun,
-			count,
-			percent: (count / total) * 100,
-			color: pronounColors[pronoun] || pronounColors.other
-		}));
+
+		return Object.entries(counts)
+			.map(([pronoun, count]) => ({
+				pronoun,
+				count,
+				percent: (count / total) * 100,
+				color: pronounColors[pronoun] || pronounColors.other
+			}))
+			.sort((a, b) => b.percent - a.percent); // Sort by percentage, highest first
 	});
 
 	let hoveredData = $derived(
