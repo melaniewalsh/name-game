@@ -179,7 +179,7 @@
 	</div>
 </div>
 
-<div class="bar-labels">
+<!-- <div class="bar-labels">
 	{#if pronounBreakdown().length > 0}
 		{#each pronounBreakdown() as { pronoun, percent }}
 			<div class="bar-label">
@@ -187,10 +187,9 @@
 			</div>
 		{/each}
 	{:else}
-		<!-- empty labels placeholder -->
 		<div class="bar-label">0.0%</div>
 	{/if}
-</div>
+</div> -->
 
 <div class="bar">
 	{#if pronounBreakdown().length > 0}
@@ -199,7 +198,11 @@
 				class="bar-segment"
 				style={`width: ${percent}%; background: ${color}`}
 				title={`${pronoun}: ${percent.toFixed(1)}%`}
-			/>
+			>
+				<div class="bar-label">
+					<strong>{_.upperFirst(pronoun)}</strong>: {percent.toFixed(1)}%
+				</div>
+			</div>
 		{/each}
 	{:else}
 		<!-- Invisible placeholders to keep height -->
@@ -388,6 +391,7 @@
 		text-align: center;
 		font-size: var(--14px);
 	}
+
 	.pub_date {
 		text-align: center;
 		font-size: var(--14px);
@@ -399,33 +403,37 @@
 		border-radius: 5px;
 		margin: 0.5rem 0;
 	}
+
 	.bar {
 		display: flex;
 		width: 100%;
 		height: 32px;
 		margin: 2rem 0;
 		border-radius: var(--border-radius);
-		overflow: hidden;
 		border: 4px solid var(--color-fg);
 	}
 
 	.bar-segment {
+		position: relative;
 		height: 100%;
 		border-right: 4px solid var(--color-fg);
 	}
 
 	.bar-segment:last-child {
 		border-right: none;
+		border-top-right-radius: 8px;
+		border-bottom-right-radius: 8px;
 	}
 
-	.bar-labels {
-		display: flex;
-		justify-content: space-between;
-		margin-top: 0.5rem;
-		font-size: 0.875rem;
+	.bar-segment:first-child {
+		border-top-left-radius: 8px;
+		border-bottom-left-radius: 8px;
 	}
+
 	.bar-label {
-		flex: 1;
-		text-align: center;
+		position: absolute;
+		top: 0;
+		transform: translateY(-110%);
+		font-size: var(--14px);
 	}
 </style>
