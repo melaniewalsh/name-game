@@ -5,20 +5,40 @@
 		placeholder = "Search book titles..."
 	} = $props();
 
+	let tempValue = $state(bindValue);
 	let showDropdown = $state(false);
 
-	// Filter options
 	const filtered = $derived(
-		!bindValue
+		!tempValue
 			? options
 			: options.filter((title) =>
-					title.toLowerCase().includes(bindValue.toLowerCase())
+					title.toLowerCase().includes(tempValue.toLowerCase())
 				)
 	);
 
-	// Select an option
+	const commitValue = () => {
+		bindValue = tempValue;
+		showDropdown = false;
+	};
+	const handleBlur = () => {
+		showDropdown = false;
+	};
+	const handleKeydown = (e) => {
+		if (e.key === "Enter") {
+			commitValue();
+			e.target.blur();
+		}
+	};
+	const handleFocus = () => {
+		showDropdown = true;
+	};
 	const select = (title) => {
-		bindValue = title;
+		tempValue = title;
+		commitValue();
+	};
+	const clear = () => {
+		bindValue = "";
+		tempValue = "";
 		showDropdown = false;
 	};
 </script>
@@ -27,30 +47,29 @@
 	<div class="input-wrapper">
 		<input
 			type="text"
-			bind:value={bindValue}
-			onfocus={() => (showDropdown = true)}
-			onblur={() => setTimeout(() => (showDropdown = false), 200)}
+			bind:value={tempValue}
+			onkeydown={handleKeydown}
+			onblur={handleBlur}
+			onfocus={handleFocus}
 			{placeholder}
 			class="autocomplete-input"
 		/>
-		{#if bindValue}
-			<button
-				onclick={() => (bindValue = "")}
-				class="clear-button"
-				type="button"
-			>
-				✕
-			</button>
+		{#if tempValue}
+			<button onclick={clear} class="clear-button" type="button"> ✕ </button>
 		{/if}
 	</div>
 
-	{#if showDropdown && filtered.length > 0}
+	{#if showDropdown}
 		<ul class="dropdown">
 			{#each filtered as title}
 				<li onmousedown={() => select(title)} class="dropdown-item">
 					{title}
 				</li>
 			{/each}
+
+			{#if filtered.length === 0}
+				<li class="dropdown-item no-results">No results found</li>
+			{/if}
 		</ul>
 	{/if}
 </div>
@@ -58,7 +77,8 @@
 <style>
 	.autocomplete-container {
 		position: relative;
-		width: 50%;
+		width: 100%;
+		max-width: 400px;
 	}
 
 	.input-wrapper {
@@ -68,9 +88,11 @@
 	.autocomplete-input {
 		width: 100%;
 		padding: 0.5rem 2rem 0.5rem 0.75rem;
-		border: 1px solid #d1d5db;
-		border-radius: 0.375rem;
 		font-size: 1rem;
+		font-family: var(--sans);
+		height: 100%;
+		border: 4px solid black;
+		border-radius: var(--border-radius);
 	}
 
 	.clear-button {
@@ -122,7 +144,8 @@
 		background-color: #f3f4f6;
 	}
 
-	input {
-		font-family: var(--sans);
+	.dropdown-item.no-results:hover {
+		background: none;
+		cursor: default;
 	}
 </style>

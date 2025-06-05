@@ -1,31 +1,12 @@
 <script>
-	import Toggle from "$components/helpers/migrate/Toggle.svelte";
 	import data from "$data/all_animals.csv";
 	import _ from "lodash";
 	import BookAutocomplete from "./BookAutocomplete.svelte";
-
-	let selectedId = $state(null);
-
-	let titleFilter = $state(null);
-
-	let filteredAnimalCounts = $derived(() =>
-		_.countBy(
-			data.filter(
-				(d) => !pronounFilter || normalizePronoun(d.pronoun) === pronounFilter
-			),
-			"animal_group"
-		)
-	);
-
-	let groupedByPronoun = $derived(() =>
-		_.groupBy(filteredSortedData, (d) => normalizePronoun(d.pronoun))
-	);
 
 	const normalizePronoun = (p) => {
 		if (p === "he/him" || p === "she/her") return p;
 		return "other";
 	};
-
 	const pronounColors = {
 		"she/her": "var(--color-pink)",
 		"he/him": "var(--color-blue)",
@@ -33,19 +14,26 @@
 	};
 	const pronounOrder = ["other", "she/her", "he/him"];
 	const animalCounts = _.countBy(data, "animal_group");
-	const pronounCounts = _.countBy(data, "pronoun");
 
-	let toggleValue = $state("off");
-	let sortBy = $state("animal");
+	console.log(
+		data.filter(
+			(d) =>
+				d.pronoun !== "he/him" &&
+				d.pronoun !== "she/her" &&
+				d.pronoun !== "it" &&
+				d.pronoun !== "[animal name]"
+		)
+	);
+
+	let selectedId = $state(null);
+	let titleFilter = $state(null);
 	let animalFilter = $state("");
 	let pronounFilter = $state("");
 	let hoveredId = $state(null);
 	let tooltipCoords = $state({ x: 0, y: 0 });
 
-	// Filter by search term more expansively — so author names come up if searched too
 	let filteredData = $derived(
 		data.filter((d) => {
-			// Only show items that match the filters (or show all if no filter)
 			const matchesAnimalFilter =
 				!animalFilter || d.animal_group === animalFilter;
 			const matchesPronounFilter =
@@ -79,8 +67,33 @@
 			return matchesAnimalFilter && matchesPronounFilter && matchesTitleFilter;
 		})
 	);
+	let filteredSortedData = $derived(
+		_.orderBy(
+			filteredData,
+			[
+				(d) => animalCounts[d.animal_group],
+				"animal_group",
+				(d) => pronounOrder.indexOf(normalizePronoun(d.pronoun))
+			],
+			["desc", "asc", "desc"]
+		).map((d, i) => ({
+			...d,
+			id: i
+		}))
+	);
+	let filteredAnimalCounts = $derived(() =>
+		_.countBy(
+			data.filter(
+				(d) => !pronounFilter || normalizePronoun(d.pronoun) === pronounFilter
+			),
+			"animal_group"
+		)
+	);
 
-	// Add pub year and author to book title in search dropdown
+	let groupedByPronoun = $derived(() =>
+		_.groupBy(filteredSortedData, (d) => normalizePronoun(d.pronoun))
+	);
+
 	let bookTitles = $derived(
 		[
 			...new Set(
@@ -97,34 +110,6 @@
 					)
 			)
 		].sort()
-	);
-
-	let filteredSortedData = $derived(
-		sortBy === "animal"
-			? _.orderBy(
-					filteredData,
-					[
-						(d) => animalCounts[d.animal_group],
-						"animal_group",
-						(d) => pronounOrder.indexOf(normalizePronoun(d.pronoun))
-					],
-					["desc", "asc", "desc"]
-				).map((d, i) => ({
-					...d,
-					id: i
-				}))
-			: _.orderBy(
-					filteredData,
-					[
-						(d) => pronounCounts[d.pronoun],
-						(d) => animalCounts[d.animal_group],
-						(d) => pronounOrder.indexOf(d.pronoun)
-					],
-					["desc", "desc", "asc"]
-				).map((d, i) => ({
-					...d,
-					id: i
-				}))
 	);
 
 	let pronounBreakdown = $derived(() => {
@@ -147,18 +132,6 @@
 		filteredSortedData.find((d) => d.id === hoveredId)
 	);
 
-	$effect(() => {
-		if (sortBy === "gender") toggleValue = "on";
-	});
-
-	const reset = () => {
-		toggleValue = "off";
-		sortBy = "animal";
-		animalFilter = "";
-		pronounFilter = "";
-		titleFilter = "";
-	};
-
 	const onMouseEnter = (e) => {
 		if (selectedId !== null) return;
 
@@ -174,35 +147,28 @@
 <h3>Explore All Animal Characters</h3>
 
 <div class="controls">
-	<div>
-		<div style="visibility: hidden">Reset</div>
-		<button class="reset" onclick={reset}>Reset</button>
+	<div style="flex: 1">
+		<div>Search by title</div>
+		<BookAutocomplete
+			options={bookTitles}
+			bind:bindValue={titleFilter}
+			placeholder="Ex: Good Night Moon"
+		/>
 	</div>
 
-	<Toggle label="Show gender" bind:value={toggleValue} />
-
-	<div>
-		<div>Sort by</div>
-		<select bind:value={sortBy}>
-			{#each ["animal", "gender"] as option}
-				<option value={option}>{_.upperFirst(option)}</option>
-			{/each}
-		</select>
-	</div>
-
-	<div>
+	<div style="flex: 0.5">
 		<div>Filter by animal</div>
 		<select bind:value={animalFilter}>
 			<option value="">All animals</option>
 			{#each _.orderBy(Object.keys(filteredAnimalCounts()), (d) => filteredAnimalCounts()[d], "desc") as animal_group}
 				<option value={animal_group}>
-					{_.upperFirst(animal_group)} ({filteredAnimalCounts()[animal_group]})
+					{_.upperFirst(animal_group)}
 				</option>
 			{/each}
 		</select>
 	</div>
 
-	<div>
+	<div style="flex: 0.5">
 		<div>Filter by pronoun</div>
 		<select bind:value={pronounFilter}>
 			<option value="">All pronouns</option>
@@ -212,15 +178,6 @@
 		</select>
 	</div>
 </div>
-
-<div>
-	<BookAutocomplete
-		options={bookTitles}
-		bind:bindValue={titleFilter}
-		placeholder="Search by title"
-	/>
-</div>
-<br />
 
 <div class="bar-labels">
 	{#if pronounBreakdown().length > 0}
@@ -258,13 +215,13 @@
 	class:visible={hoveredId !== null}
 	style="top: {tooltipCoords.y}px; left: {tooltipCoords.x}px;"
 >
+	<div class="animal-name">{_.upperFirst(hoveredData?.animal_group)}</div>
 	<span
 		class={`pronoun ${hoveredData?.pronoun === "she/her" ? "she" : hoveredData?.pronoun === "he/him" ? "he" : "neutral"}`}
 		style:background={pronounColors[hoveredData?.pronoun] || null}
 	>
 		{hoveredData?.pronoun}
 	</span>
-	<div class="animal-name">{hoveredData?.animal_group}</div>
 	<a
 		href={hoveredData?.goodreads_link}
 		target="_blank"
@@ -280,7 +237,7 @@
 </div>
 
 {#if filteredSortedData.length > 0}
-	{#if animalFilter}
+	{#if animalFilter || titleFilter}
 		{#each ["he/him", "she/her", "other"] as pronoun}
 			{#if groupedByPronoun()[pronoun]?.length > 0}
 				<h3>{pronoun}</h3>
@@ -289,25 +246,17 @@
 						<div
 							id={d.id}
 							class="animal"
-							class:show-gender={toggleValue === "on"}
-							style:background={toggleValue === "on"
-								? pronounColors[d.pronoun] || "var(--color-gray-700)"
-								: null}
 							style={`--rotate: ${_.sample([-5, 5])}deg`}
 							onmouseenter={onMouseEnter}
 							onmouseleave={() => {
 								if (selectedId === null) hoveredId = null;
 							}}
 						>
-							{#if haveImages.includes(d.animal_group)}
-								<img
-									class="icon"
-									src={`assets/animals/${d.animal_group}.png`}
-									alt={d.animal_group}
-								/>
-							{:else}
-								{d.animal_group}
-							{/if}
+							<img
+								class="icon"
+								src={`assets/animals/${d.animal_group}.png`}
+								alt={d.animal_group}
+							/>
 						</div>
 					{/each}
 				</div>
@@ -319,25 +268,17 @@
 				<div
 					id={d.id}
 					class="animal"
-					class:show-gender={toggleValue === "on"}
-					style:background={toggleValue === "on"
-						? pronounColors[d.pronoun] || "var(--color-gray-200)"
-						: null}
 					style={`--rotate: ${_.sample([-5, 5])}deg`}
 					onmouseenter={onMouseEnter}
 					onmouseleave={() => {
 						if (selectedId === null) hoveredId = null;
 					}}
 				>
-					{#if haveImages.includes(d.animal_group)}
-						<img
-							class="icon"
-							src={`assets/animals/${d.animal_group}.png`}
-							alt={d.animal_group}
-						/>
-					{:else}
-						{d.animal_group}
-					{/if}
+					<img
+						class="icon"
+						src={`assets/animals/${d.animal_group}.png`}
+						alt={d.animal_group}
+					/>
 				</div>
 			{/each}
 		</div>
@@ -351,7 +292,7 @@
 			style="width: 100px; margin: auto;"
 		/>
 	</div>
-	<p style="text-align: center; font-style: italic; margin-top: 0.5rem;">
+	<p style="text-align: center; font-style: italic; margin: 0;">
 		No animals found.
 	</p>
 {/if}
@@ -368,7 +309,6 @@
 	.controls {
 		display: flex;
 		gap: 0.5rem;
-		align-items: top;
 		justify-content: space-between;
 		flex-wrap: wrap;
 		margin-bottom: 2rem;
@@ -415,7 +355,7 @@
 		top: 0;
 		left: 0;
 		pointer-events: auto;
-		background: var(--color-orange-light);
+		background: white;
 		width: 220px;
 		padding: 1rem;
 		display: none;
@@ -429,11 +369,12 @@
 	}
 
 	.pronoun {
+		font-size: var(--20px);
 		padding: 0 4px;
 	}
 
 	.animal-name {
-		font-size: 11px;
+		font-size: var(--14px);
 	}
 
 	.title {
