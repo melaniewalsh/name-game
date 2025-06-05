@@ -1,7 +1,9 @@
 <script>
-	import data from "$data/all_animals.csv";
+	import data from "$data/all_animals_other_removed.csv";
 	import _ from "lodash";
 	import BookAutocomplete from "./BookAutocomplete.svelte";
+
+	let { description } = $props();
 
 	const normalizePronoun = (p) => {
 		if (p === "he/him" || p === "she/her") return p;
@@ -14,16 +16,6 @@
 	};
 	const pronounOrder = ["other", "she/her", "he/him"];
 	const animalCounts = _.countBy(data, "animal_group");
-
-	console.log(
-		data.filter(
-			(d) =>
-				d.pronoun !== "he/him" &&
-				d.pronoun !== "she/her" &&
-				d.pronoun !== "it" &&
-				d.pronoun !== "[animal name]"
-		)
-	);
 
 	let selectedId = $state(null);
 	let titleFilter = $state(null);
@@ -142,9 +134,22 @@
 		const y = rect.top + rect.height + window.scrollY;
 		tooltipCoords = { x, y };
 	};
+
+	const downloadData = () => {
+		const link = document.createElement("a");
+		link.href = "/assets/data/kids-book-animals.csv";
+		link.download = "kids-book-animals.csv";
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
 </script>
 
 <h3>Explore All Animal Characters</h3>
+<div class="description">
+	<span>{@html description}</span>
+	<button onclick={downloadData}>Download data</button>
+</div>
 
 <div class="controls">
 	<div style="flex: 1">
@@ -309,6 +314,15 @@
 		gap: 0.5rem;
 	}
 
+	.description {
+		display: flex;
+		align-items: center;
+		gap: 2rem;
+		font-size: var(--18px);
+		justify-content: space-between;
+		margin-bottom: 1rem;
+	}
+
 	.controls {
 		display: flex;
 		gap: 0.5rem;
@@ -316,6 +330,12 @@
 		flex-wrap: wrap;
 		margin-bottom: 2rem;
 		font-size: var(--20px);
+	}
+
+	.controls > div:last-child {
+		display: flex;
+		flex-direction: column;
+		align-items: end;
 	}
 
 	select {
@@ -408,7 +428,7 @@
 		display: flex;
 		width: 100%;
 		height: 32px;
-		margin: 2rem 0;
+		margin: 3rem 0 2rem 0;
 		border-radius: var(--border-radius);
 		border: 4px solid var(--color-fg);
 	}
@@ -433,7 +453,8 @@
 	.bar-label {
 		position: absolute;
 		top: 0;
-		transform: translateY(-110%);
+		line-height: 1;
+		transform: translateY(calc(-100% - 6px));
 		font-size: var(--14px);
 	}
 </style>

@@ -89,6 +89,7 @@
 	}
 
 	li {
+		line-height: 1.2;
 		margin: 0.25rem 0;
 	}
 
