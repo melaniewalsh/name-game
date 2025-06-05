@@ -41,18 +41,46 @@
 	let pronounFilter = $state("");
 	let hoveredId = $state(null);
 	let tooltipCoords = $state({ x: 0, y: 0 });
+
+	// Filter by search term more expansively — so author names come up if searched too
 	let filteredData = $derived(
 		data.filter((d) => {
-			const norm = normalizePronoun(d.pronoun);
-			return (
-				(!animalFilter || d.animal_group === animalFilter) &&
-				(!pronounFilter || normalizePronoun(d.pronoun) === pronounFilter) &&
-				(!titleFilter ||
-					d.title.toLowerCase().includes(titleFilter.toLowerCase()))
-			);
+			// Only show items that match the filters (or show all if no filter)
+			const matchesAnimalFilter =
+				!animalFilter || d.animal_group === animalFilter;
+			const matchesPronounFilter =
+				!pronounFilter || normalizePronoun(d.pronoun) === pronounFilter;
+
+			let matchesTitleFilter = true;
+			if (titleFilter) {
+				const searchTerm = titleFilter.toLowerCase();
+
+				if (
+					searchTerm.includes(" — ") &&
+					searchTerm.includes("(") &&
+					searchTerm.includes(")")
+				) {
+					// User clicked a formatted option like "Good Night Moon (1947) — Margaret Wise Brown"
+					const titlePart = titleFilter.split("(")[0].trim();
+					matchesTitleFilter = d.title
+						.toLowerCase()
+						.includes(titlePart.toLowerCase());
+				} else {
+					// User is typing freely - search both title and author
+					const titleContainsSearch = d.title
+						.toLowerCase()
+						.includes(searchTerm);
+					const authorContainsSearch =
+						d.author && d.author.toLowerCase().includes(searchTerm);
+					matchesTitleFilter = titleContainsSearch || authorContainsSearch;
+				}
+			}
+
+			return matchesAnimalFilter && matchesPronounFilter && matchesTitleFilter;
 		})
 	);
 
+	// Add pub year and author to book title in search dropdown
 	let bookTitles = $derived(
 		[
 			...new Set(
@@ -63,7 +91,10 @@
 							(!pronounFilter || normalizePronoun(d.pronoun) === pronounFilter)
 						);
 					})
-					.map((d) => d.title.split("(")[0].trim())
+					.map(
+						(d) =>
+							`${d.title.split("(")[0].trim()} (${d.pub_year}) — ${d.author || "Unknown"}`
+					)
 			)
 		].sort()
 	);
