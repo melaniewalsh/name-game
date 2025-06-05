@@ -118,11 +118,8 @@
 		padding: 1em 0;
 	}
 
-	.has-images swiper-container {
-		/* background: var(--color-orange); */
-	}
-
 	swiper-slide {
+		position: relative;
 		width: fit-content;
 		pointer-events: auto;
 		height: 360px;
