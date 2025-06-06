@@ -4,7 +4,7 @@
 
 	let { summary, content, id, C, components } = $props();
 
-	let open = $state(false);
+	let open = $state(summary.open);
 </script>
 
 <details bind:open id={`${id}-collapsible`}>
@@ -89,7 +89,7 @@
 	}
 
 	li {
-		line-height: 1.2;
+		line-height: 1.125;
 		margin: 0.25rem 0;
 	}
 
