@@ -122,7 +122,7 @@
 		position: relative;
 		width: fit-content;
 		pointer-events: auto;
-		height: 420px;
+		height: 360px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -203,6 +203,7 @@
 		line-height: 1.4;
 		background: var(--color-white);
 		border-radius: var(--border-radius);
+		font-size: var(--20px);
 	}
 
 	:global(.swiper-slide-shadow-left) {
