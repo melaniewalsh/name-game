@@ -40,7 +40,7 @@
 					searchTerm.includes("(") &&
 					searchTerm.includes(")")
 				) {
-					// User clicked a formatted option like "Good Night Moon (1947) — Margaret Wise Brown"
+					// User clicked a formatted option like "Goodnight Moon (1947) — Margaret Wise Brown"
 					const titlePart = titleFilter.split("(")[0].trim();
 					matchesTitleFilter = d.title
 						.toLowerCase()
@@ -157,7 +157,7 @@
 		<BookAutocomplete
 			options={bookTitles}
 			bind:bindValue={titleFilter}
-			placeholder="Ex: Good Night Moon"
+			placeholder="Ex: Goodnight Moon"
 		/>
 	</div>
 
