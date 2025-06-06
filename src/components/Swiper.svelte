@@ -122,7 +122,7 @@
 		position: relative;
 		width: fit-content;
 		pointer-events: auto;
-		height: 360px;
+		height: 420px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -201,6 +201,8 @@
 	blockquote {
 		padding: 2em;
 		line-height: 1.4;
+		background: var(--color-white);
+		border-radius: var(--border-radius);
 	}
 
 	:global(.swiper-slide-shadow-left) {
