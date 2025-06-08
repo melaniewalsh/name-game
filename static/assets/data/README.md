@@ -11,7 +11,7 @@ This folder contains data used in the essay **[“Bears Will Be Boys”](https:/
 ## Datasets
 
 ### 1. `kids-book-animals.csv`
-A dataset of anthropomorphized animal characters in widely read English-language picture books—only if referenced as she/her, he/him, it/its, or with a gendered honorific (Ms., Mr.) or familial role (mother, brother). This dataset includes every appearance of an animal character from our selection of popular picture books, including repeat appearances.
+A dataset of 821 anthropomorphized animal characters in widely read English-language picture books—only if referenced as she/her, he/him, it/its, or with a gendered honorific (Ms., Mr.) or familial role (mother, brother). This dataset includes every appearance of an animal character from our selection of popular picture books, including repeat appearances.
 
 **Columns:**
 - `goodreads_link`: Link to the book’s Goodreads page  
@@ -78,7 +78,7 @@ To do so, we first compiled a general dataset of English-language picture books 
 
 To find picture books that specifically feature animals, we selected any book that had “animals” as one of its top Goodreads tags; any book that was tagged as “animals” in the Children’s Book Database; or any book that GPT-4o identified as featuring animals (after being prompted with its title, author, and description). We manually evaluated every book and every representation of animals, so we used this approach to reduce a large dataset to a manageable size. We excluded anthologies and collections, like Grimm’s Fairy Tales.
 
-We then ranked the remaining books by number of Goodreads ratings and selected the top 30 books from every decade.
+We then ranked the remaining books by number of Goodreads ratings and selected the top ~30 books from every decade category.
 
 ### How did we identify gender?
 
