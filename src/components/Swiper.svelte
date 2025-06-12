@@ -41,8 +41,10 @@
 	{/if}
 
 	<div class="outer">
-		<button onclick={() => swiperEl.swiper.slidePrev()} disabled={active === 0}
-			>{@html arrowLeft}</button
+		<button
+			onclick={() => swiperEl.swiper.slidePrev()}
+			disabled={active === 0}
+			aria-label="left arrow">{@html arrowLeft}</button
 		>
 
 		<swiper-container
@@ -101,7 +103,8 @@
 
 		<button
 			onclick={() => swiperEl.swiper.slideNext()}
-			disabled={active === examples.length - 1}>{@html arrowRight}</button
+			disabled={active === examples.length - 1}
+			aria-label="right arrow">{@html arrowRight}</button
 		>
 	</div>
 

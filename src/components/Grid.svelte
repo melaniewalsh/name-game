@@ -162,8 +162,8 @@
 	</div>
 
 	<div>
-		<div>Filter by animal</div>
-		<select bind:value={animalFilter}>
+		<label for="animal-select">Filter by animal</label>
+		<select id="animal-select" bind:value={animalFilter}>
 			<option value="">All animals</option>
 			{#each _.orderBy(Object.keys(filteredAnimalCounts()), (d) => filteredAnimalCounts()[d], "desc") as animal_group}
 				<option value={animal_group}>
@@ -174,8 +174,8 @@
 	</div>
 
 	<div>
-		<div>Filter by pronoun</div>
-		<select bind:value={pronounFilter}>
+		<label for="pronoun-select">Filter by pronoun</label>
+		<select id="pronoun-select" bind:value={pronounFilter}>
 			<option value="">All pronouns</option>
 			{#each ["he/him", "she/her", "other"] as pronoun}
 				<option value={pronoun}>{_.upperFirst(pronoun)}</option>
@@ -318,6 +318,11 @@
 		flex-wrap: wrap;
 		margin-bottom: 2rem;
 		font-size: var(--20px);
+	}
+
+	.controls > div {
+		display: flex;
+		flex-direction: column;
 	}
 
 	.controls > div:first-child {

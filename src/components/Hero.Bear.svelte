@@ -46,7 +46,7 @@
 </script>
 
 <div class="wrapper">
-	<img class="bear" src="assets/hero/bear.png" />
+	<img class="bear" src="assets/hero/bear.png" alt="bear" />
 
 	{#each accessories as { id, top, left, width }, i}
 		{@const active = i === currentIndex}
