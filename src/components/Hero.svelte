@@ -53,6 +53,10 @@
 		text-align: center;
 	}
 
+	p {
+		line-height: 1.2;
+	}
+
 	.description {
 		font-size: var(--32px);
 	}
@@ -68,5 +72,20 @@
 	.byline,
 	.others {
 		margin: 0;
+	}
+
+	@media (max-width: 600px) {
+		h1 {
+			font-size: var(--64px);
+		}
+
+		.description {
+			font-size: var(--28px);
+		}
+
+		.byline,
+		.others {
+			font-size: var(--18px);
+		}
 	}
 </style>

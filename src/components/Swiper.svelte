@@ -229,4 +229,14 @@
 		stroke: var(--color-fg);
 		stroke-width: 3px;
 	}
+
+	@media (max-width: 600px) {
+		figure {
+			margin: 1rem 0;
+		}
+
+		button {
+			width: 3em;
+		}
+	}
 </style>

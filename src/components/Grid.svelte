@@ -152,7 +152,7 @@
 </div>
 
 <div class="controls">
-	<div style="flex: 1">
+	<div>
 		<div>Search by title</div>
 		<BookAutocomplete
 			options={bookTitles}
@@ -161,7 +161,7 @@
 		/>
 	</div>
 
-	<div style="flex: 0.5">
+	<div>
 		<div>Filter by animal</div>
 		<select bind:value={animalFilter}>
 			<option value="">All animals</option>
@@ -173,7 +173,7 @@
 		</select>
 	</div>
 
-	<div style="flex: 0.5">
+	<div>
 		<div>Filter by pronoun</div>
 		<select bind:value={pronounFilter}>
 			<option value="">All pronouns</option>
@@ -183,18 +183,6 @@
 		</select>
 	</div>
 </div>
-
-<!-- <div class="bar-labels">
-	{#if pronounBreakdown().length > 0}
-		{#each pronounBreakdown() as { pronoun, percent }}
-			<div class="bar-label">
-				<strong>{pronoun}</strong>: {percent.toFixed(1)}%
-			</div>
-		{/each}
-	{:else}
-		<div class="bar-label">0.0%</div>
-	{/if}
-</div> -->
 
 <div class="bar">
 	{#if pronounBreakdown().length > 0}
@@ -332,6 +320,10 @@
 		font-size: var(--20px);
 	}
 
+	.controls > div:first-child {
+		flex: 1;
+	}
+
 	.controls > div:last-child {
 		display: flex;
 		flex-direction: column;
@@ -340,6 +332,10 @@
 
 	select {
 		border: 4px solid black;
+	}
+
+	h3 {
+		text-align: center;
 	}
 
 	button,
@@ -456,5 +452,45 @@
 		line-height: 1;
 		transform: translateY(calc(-100% - 6px));
 		font-size: var(--14px);
+		white-space: nowrap;
+	}
+
+	.bar-segment:nth-of-type(3) .bar-label {
+		right: 0;
+	}
+
+	@media (max-width: 600px) {
+		h3 {
+			font-size: var(--28px);
+		}
+
+		.description {
+			flex-direction: column;
+			gap: 0;
+		}
+
+		.controls {
+			font-size: var(--18px);
+		}
+
+		.controls > div:first-child {
+			flex: none;
+			width: 100%;
+		}
+
+		.grid {
+			grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+			grid-auto-rows: 36px;
+		}
+
+		.animal {
+			margin: -8px;
+		}
+
+		.bar-segment:nth-of-type(1) .bar-label,
+		.bar-segment:nth-of-type(2) .bar-label {
+			transform: translate(0, 50%);
+			left: 6px;
+		}
 	}
 </style>

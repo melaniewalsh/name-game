@@ -182,6 +182,14 @@
 	}
 
 	@media (max-width: 768px) {
+		summary h2 {
+			font-size: var(--48px);
+		}
+
+		ul {
+			font-size: var(--18px);
+		}
+
 		.top {
 			flex-direction: column;
 		}

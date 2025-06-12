@@ -111,6 +111,14 @@
 		gap: 2rem;
 	}
 
+	.arrows div:first-child {
+		text-align: end;
+	}
+
+	.arrows div {
+		white-space: nowrap;
+	}
+
 	.inner {
 		/* border: 8px solid var(--color-pink); */
 		border-radius: 16px;
@@ -241,13 +249,39 @@
 	}
 
 	@media (max-width: 600px) {
+		h3 {
+			font-size: var(--28px);
+		}
+
+		p {
+			font-size: var(--16px);
+			margin: 0.5rem 0;
+		}
+
+		.rows {
+			margin-right: 1rem;
+		}
+
 		.one-line .rows {
-			margin: 0 2rem;
+			margin: 0 1rem;
+		}
+
+		.animal {
+			height: 64px;
+			width: 64px;
 		}
 
 		.x-axis .marker:nth-child(2) .label,
 		.x-axis .marker:nth-child(4) .label {
 			display: none;
+		}
+
+		.marker:nth-child(1) .label {
+			transform: translate(-30%, 50%);
+		}
+
+		.marker:nth-child(5) .label {
+			transform: translate(-70%, 50%);
 		}
 	}
 </style>
