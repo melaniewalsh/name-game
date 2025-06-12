@@ -12,7 +12,7 @@
 		<div class="top">
 			<div class="panel">
 				<h2>{summary.title}</h2>
-				<div class="read-more">
+				<div class="read-more" class:visible={!open}>
 					<span>{@html clockSvg}</span>Click to read more ({summary.time})
 				</div>
 			</div>
@@ -113,11 +113,15 @@
 
 	.read-more {
 		display: flex;
+		visibility: hidden;
 		font-weight: bold;
 		text-decoration: underline;
 		font-size: var(--18px);
 	}
 
+	.read-more.visible {
+		visibility: visible;
+	}
 	.read-more span {
 		margin-right: 0.3rem;
 	}
