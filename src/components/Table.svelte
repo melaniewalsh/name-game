@@ -8,7 +8,7 @@
 </script>
 
 <div class="table">
-	<h3>{@html title}</h3>
+	<h3>{@html title}🐞</h3>
 
 	<div class="head">
 		{#each Object.keys(groupedData) as group}
