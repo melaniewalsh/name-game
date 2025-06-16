@@ -71,6 +71,10 @@
 		padding: 1rem 2rem;
 	}
 
+	summary::-webkit-details-marker {
+		display: none;
+	}
+
 	summary.open {
 		margin-bottom: 3rem;
 	}
@@ -122,6 +126,7 @@
 	.read-more.visible {
 		visibility: visible;
 	}
+
 	.read-more span {
 		margin-right: 0.3rem;
 	}
