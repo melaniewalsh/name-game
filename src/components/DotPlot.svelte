@@ -250,7 +250,7 @@
 
 	@media (max-width: 600px) {
 		h3 {
-			font-size: var(--28px);
+			font-size: var(--22px);
 		}
 
 		p {
@@ -282,6 +282,10 @@
 
 		.marker:nth-child(5) .label {
 			transform: translate(-70%, 50%);
+		}
+
+		.label {
+			font-size: var(--16px);
 		}
 	}
 </style>

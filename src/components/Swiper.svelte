@@ -242,5 +242,13 @@
 		button {
 			width: 3em;
 		}
+
+		blockquote {
+			padding: 1em;
+			line-height: 1.25;
+			background: var(--color-white);
+			border-radius: var(--border-radius);
+			font-size: var(--18px);
+		}
 	}
 </style>

@@ -456,7 +456,7 @@
 
 	@media (max-width: 600px) {
 		h3 {
-			font-size: var(--28px);
+			font-size: var(--22px);
 		}
 
 		.description {
