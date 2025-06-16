@@ -26,7 +26,7 @@
 	$effect(() => {
 		interval = setInterval(() => {
 			currentIndex = (currentIndex + 1) % accessories.length;
-		}, 2500);
+		}, 2000);
 
 		return () => {
 			clearInterval(interval);

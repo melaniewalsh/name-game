@@ -134,21 +134,11 @@
 		const y = rect.top + rect.height + window.scrollY;
 		tooltipCoords = { x, y };
 	};
-
-	const downloadData = () => {
-		const link = document.createElement("a");
-		link.href = "/assets/data/kids-book-animals.csv";
-		link.download = "kids-book-animals.csv";
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
-	};
 </script>
 
 <h3>Explore All Animal Characters</h3>
 <div class="description">
 	<span>{@html description}</span>
-	<button onclick={downloadData}>Download data</button>
 </div>
 
 <div class="controls">
@@ -303,11 +293,11 @@
 	}
 
 	.description {
-		display: flex;
-		align-items: center;
-		gap: 2rem;
+		/* display: flex; */
+		/* align-items: center; */
+		/* gap: 2rem; */
 		font-size: var(--18px);
-		justify-content: space-between;
+		/* justify-content: space-between; */
 		margin-bottom: 1rem;
 	}
 
