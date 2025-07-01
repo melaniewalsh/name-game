@@ -33,7 +33,4 @@
 </svelte:boundary>
 
 <style>
-	article {
-		padding: var(--16px);
-	}
 </style>

@@ -238,9 +238,26 @@
 		figure {
 			margin: 1rem 0;
 		}
+		.outer {
+			position: relative;
+		}
 
 		button {
 			width: 3em;
+			position: absolute;
+			bottom: 0;
+		}
+
+		button:first-of-type {
+			left: 0;
+		}
+
+		button:last-of-type {
+			right: 0;
+		}
+
+		swiper-container {
+			padding-bottom: 4rem;
 		}
 
 		blockquote {

@@ -7,54 +7,60 @@
 	let open = $state(summary.open);
 </script>
 
-<details bind:open id={`${id}-collapsible`}>
-	<summary class:open>
-		<div class="top">
-			<div class="panel">
-				<h2>{summary.title}</h2>
-				<div class="read-more" class:visible={!open}>
-					<span>{@html clockSvg}</span>Click to read more ({summary.time})
+<div class="c">
+	<details bind:open id={`${id}-collapsible`}>
+		<summary class:open>
+			<div class="top">
+				<div class="panel">
+					<h2>{summary.title}</h2>
+					<div class="read-more" class:visible={!open}>
+						<span>{@html clockSvg}</span>Click to read more ({summary.time})
+					</div>
+				</div>
+
+				<div class="panel">
+					<ul>
+						{#each summary.questions as q}
+							<li>{q}</li>
+						{/each}
+					</ul>
 				</div>
 			</div>
 
-			<div class="panel">
-				<ul>
-					{#each summary.questions as q}
-						<li>{q}</li>
-					{/each}
-				</ul>
+			<div class="arrow" class:down={open} class:up={!open}>
+				{@html arrowSvg}
 			</div>
-		</div>
+		</summary>
 
-		<div class="arrow" class:down={open} class:up={!open}>
-			{@html arrowSvg}
-		</div>
-	</summary>
-
-	<section {id}>
-		{#if C}
-			<C {...content} />
-		{:else}
-			{#each content as { type, value }}
-				{@const C = components[type]}
-				{@const isString = typeof value === "string"}
-				{#if C}
-					<C {...value} />
-				{:else if type === "text"}
-					<p>{@html value}</p>
-				{:else if isString}
-					<svelte:element this={type}>
-						{@html value}
-					</svelte:element>
-				{:else}
-					<svelte:element this={type} {...value}></svelte:element>
-				{/if}
-			{/each}
-		{/if}
-	</section>
-</details>
+		<section {id}>
+			{#if C}
+				<C {...content} />
+			{:else}
+				{#each content as { type, value }}
+					{@const C = components[type]}
+					{@const isString = typeof value === "string"}
+					{#if C}
+						<C {...value} />
+					{:else if type === "text"}
+						<p>{@html value}</p>
+					{:else if isString}
+						<svelte:element this={type}>
+							{@html value}
+						</svelte:element>
+					{:else}
+						<svelte:element this={type} {...value}></svelte:element>
+					{/if}
+				{/each}
+			{/if}
+		</section>
+	</details>
+</div>
 
 <style>
+	.c {
+		padding: 0 var(--16px);
+	}
+
 	section,
 	details {
 		margin: 0 auto 4rem auto;

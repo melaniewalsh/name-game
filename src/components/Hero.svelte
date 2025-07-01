@@ -74,6 +74,10 @@
 		margin: 0;
 	}
 
+	:global(.others a) {
+		display: inline-block;
+	}
+
 	@media (max-width: 600px) {
 		h1 {
 			font-size: var(--64px);

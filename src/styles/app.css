@@ -118,6 +118,7 @@ svg {
 section {
 	margin: 0 auto 4rem auto;
 	max-width: var(--col-width);
+	/* padding: 0 var(--16px); */
 }
 
 @media screen and (max-width: 768px) {
@@ -180,4 +181,8 @@ section#all {
 
 section#all h3 {
 	text-align: center;
+}
+
+section#intro, section#hero > * {
+	padding: 0 var(--16px);
 }
