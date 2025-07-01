@@ -123,6 +123,7 @@
 
 	.read-more {
 		display: flex;
+		align-items: center;
 		visibility: hidden;
 		font-weight: bold;
 		text-decoration: underline;
@@ -135,6 +136,13 @@
 
 	.read-more span {
 		margin-right: 0.3rem;
+		height: 20px;
+		width: 20px;
+	}
+
+	:global(.read-more svg) {
+		width: 100%;
+		height: 100%;
 	}
 
 	.arrow {
@@ -146,6 +154,13 @@
 		border: 3px solid black;
 		border-radius: 1rem;
 		padding: 0.5rem;
+		height: 70px;
+		width: 70px;
+	}
+
+	:global(.arrow svg) {
+		width: 100%;
+		height: 100%;
 	}
 
 	:global(.arrow.down svg) {
