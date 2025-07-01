@@ -5,29 +5,22 @@
 	let currentIndex = $state(0);
 	let interval;
 
-	const accessories = $derived(
-		[
-			{ id: "bowtie", top: "83%", width: 90 },
-			{ id: "lips", top: "74%", left: "50.8%", width: 40 },
-			{ id: "hair", top: "32%", left: "50.5%", width: 250 },
-			{ id: "glasses", top: "42%", left: "51%", width: 150 },
-			{ id: "mustache", top: "62%", left: "51%", width: 120 },
-			{ id: "tiara", top: "19%", left: "49%", width: 90 },
-			{ id: "cap", top: "12%" },
-			{ id: "tophat", top: "4%" },
-			{ id: "girl_glasses", top: "44%", left: "50.5%", width: 160 }
-		].filter((d) => {
-			// Exclude hair on mobile
-			if (d.id === "hair" && dimensions.width < 600) return false;
-			return true;
-		})
-	);
+	const accessories = $derived([
+		{ id: "bowtie", top: "83%", width: 90 },
+		{ id: "lips", top: "74%", left: "50.8%", width: 40 },
+		{ id: "hair", top: "32%", left: "50.5%", width: 250 },
+		{ id: "glasses", top: "42%", left: "51%", width: 150 },
+		{ id: "mustache", top: "62%", left: "51%", width: 120 },
+		{ id: "tiara", top: "19%", left: "49%", width: 90 },
+		{ id: "cap", top: "12%" },
+		{ id: "tophat", top: "4%" },
+		{ id: "girl_glasses", top: "44%", left: "50.5%", width: 160 }
+	]);
 
 	$effect(() => {
 		interval = setInterval(() => {
 			currentIndex = (currentIndex + 1) % accessories.length;
 		}, 2000);
-
 		return () => {
 			clearInterval(interval);
 		};
@@ -45,15 +38,18 @@
 	};
 </script>
 
-<div class="wrapper">
+<div class="wrapper" class:ready={dimensions.width && dimensions.width > 0}>
 	<img class="bear" src="assets/hero/bear.png" alt="bear" />
 
 	{#each accessories as { id, top, left, width }, i}
 		{@const active = i === currentIndex}
 		<img
+			{id}
 			class="accessory"
 			class:active
-			class:hidden={getPosition(i) > 150 || getPosition(i) < -50}
+			class:hidden={!dimensions.width ||
+				getPosition(i) > 150 ||
+				getPosition(i) < -50}
 			alt={id}
 			src={`assets/hero/${id}.png`}
 			style:width={width ? `${width}px` : "100px"}
@@ -89,6 +85,10 @@
 		transition:
 			left 0.8s ease,
 			opacity 0.8s ease;
+	}
+
+	#hair:not(.active) {
+		z-index: -1;
 	}
 
 	.active {

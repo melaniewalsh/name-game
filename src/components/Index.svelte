@@ -25,7 +25,7 @@
 
 <article>
 	<Hero {title} {description} {byline} {others}></Hero>
-	<CMS {body} {components} />
+	<!-- <CMS {body} {components} /> -->
 </article>
 
 <svelte:boundary onerror={(e) => console.error(e)}>
