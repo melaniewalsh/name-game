@@ -155,7 +155,7 @@
 		<label for="animal-select">Filter by animal</label>
 		<select id="animal-select" bind:value={animalFilter}>
 			<option value="">All animals</option>
-			{#each _.orderBy(Object.keys(filteredAnimalCounts()), (d) => filteredAnimalCounts()[d], "desc") as animal_group}
+			{#each _.orderBy(Object.keys(filteredAnimalCounts()), (d) => d, "asc") as animal_group}
 				<option value={animal_group}>
 					{_.upperFirst(animal_group)}
 				</option>
