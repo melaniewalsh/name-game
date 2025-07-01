@@ -78,7 +78,7 @@
 								style:left={`${xScale(xGet(d))}px`}
 							>
 								<img
-									src="assets/animals/{d.animal}.png"
+									src="assets/animals2x/{d.animal}@2x.png"
 									alt="{d.animal} illustration"
 								/>
 							</div>
