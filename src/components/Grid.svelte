@@ -41,10 +41,8 @@
 					searchTerm.includes(")")
 				) {
 					// User clicked a formatted option like "Goodnight Moon (1947) — Margaret Wise Brown"
-					const titlePart = titleFilter.split("(")[0].trim();
-					matchesTitleFilter = d.title
-						.toLowerCase()
-						.includes(titlePart.toLowerCase());
+					const formattedOption = `${d.title.split("(")[0].trim()} (${d.pub_year}) — ${d.author || "Unknown"}`;
+					matchesTitleFilter = formattedOption === titleFilter;
 				} else {
 					// User is typing freely - search both title and author
 					const titleContainsSearch = d.title
