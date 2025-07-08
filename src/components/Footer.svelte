@@ -46,7 +46,7 @@
 				...d,
 				tease: d.hed,
 				slug: d.image,
-				href: d.url
+				href: d.url.startsWith("http") ? d.url : `${base}/${d.url}`
 			}));
 
 			storyCount = filtered.length;
@@ -77,8 +77,7 @@
 						We’ve published <strong>{storyCount}</strong> awesome stories such
 						as
 						{#each stories as { short, url }, i}
-							<a href="{base}/{url}" target="_blank" rel="noreferrer">{short}</a
-							>,&nbsp;
+							<a href={url} target="_blank" rel="noreferrer">{short}</a>,&nbsp;
 						{/each}and more.
 					</section>
 				{/if}
