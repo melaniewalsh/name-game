@@ -15,7 +15,7 @@
 
 	// ---- props (change in parent) ----
 	const {
-		csvUrl = `${base}/data/ssa_babynames.csv`, // file in static/data/
+		csvUrl = `${base}/data/ssa_babynames_filtered.csv`, // file in static/data/
 		height = 360, // total SVG height
 		defaultName = "Emma", // default name to display
 		startHidden = false // start in hidden/guess mode
