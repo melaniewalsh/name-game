@@ -8,6 +8,7 @@
 	import Swiper from "$components/Swiper.svelte";
 	import Figure from "$components/Figure.svelte";
 	import DotPlot from "$components/DotPlot.svelte";
+	import DotPlotSimple from "$components/DotPlotSimple.svelte";
 	import Versus from "$components/Versus.svelte";
 	import Table from "$components/Table.svelte";
 	import Grid from "$components/Grid.svelte";
@@ -16,7 +17,7 @@
 	const copy = getContext("copy");
 	const { body } = copy;
 	const { title, description, byline, others } = copy.meta;
-	const components = { Ul, Details, Swiper, DotPlot, Versus, Figure, Table, Grid };
+	const components = { Ul, Details, Swiper, DotPlot, DotPlotSimple, Versus, Figure, Table, Grid };
 	// const data = getContext("data");
 
 	onMount(() => {
