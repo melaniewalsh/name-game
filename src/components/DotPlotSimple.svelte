@@ -663,20 +663,20 @@
 
 	.suggestions {
 		position: absolute;
-		bottom: 100%;
+		top: 100%;
 		left: 0;
 		right: 0;
 		background: white;
 		border: 2px solid #6B46C1;
-		border-bottom: none;
-		border-radius: 6px 6px 0 0;
+		border-top: none;
+		border-radius: 0 0 6px 6px;
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		max-height: 300px;
 		overflow-y: auto;
 		z-index: 1000;
-		box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
 	.suggestions li {
@@ -708,22 +708,11 @@
 		flex-shrink: 0;
 	}
 
-	.sex-buttons button {
+	.sex-buttons button,
+	.mode-buttons button {
 		flex: 1;
 		padding: 8px 16px;
 		font-size: 14px;
-		font-weight: 500;
-		background: white;
-		border: 2px solid #ddd;
-		border-radius: 6px;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.mode-buttons button {
-		flex: 1;
-		padding: 6px 12px;
-		font-size: 13px;
 		font-weight: 500;
 		background: white;
 		border: 2px solid #ddd;

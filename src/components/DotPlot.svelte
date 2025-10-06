@@ -20,14 +20,18 @@
 		defaultName = "Emma", // default name to display
 		startHidden = false, // start in hidden/guess mode
 		startYear: propStartYear = 1880, // start year for x-axis
-		showControls = true // show or hide all controls
+		showControls = true, // show or hide all controls
+		playerMode = false, // if true, only show guess controls (no reveal/reset)
+		externalNameOptions = [] // name options passed from parent (for multiplayer)
 	} = $props();
 
 	// ---- interactive state ----
 	let name = $state(defaultName); // one name to plot (F+M total or single sex)
 	let sex = $state("All"); // 'All' | 'F' | 'M'
 	let mode = $state("raw"); // 'raw' | 'proportion'
-	let startYear = $state(typeof propStartYear === 'string' ? parseInt(propStartYear) : propStartYear);
+	let startYear = $state(
+		typeof propStartYear === "string" ? parseInt(propStartYear) : propStartYear
+	);
 
 	// Reactive margin based on mode
 	let margin = $derived(
@@ -57,6 +61,14 @@
 	let showWrongGuessLine = $state(false);
 	let wrongGuessName = $state("");
 	let showCelebration = $state(false);
+
+	// Optional name choices for guessing
+	let nameOptions = $state([]);
+	let showAddOptions = $state(false);
+	let newOptionInput = $state("");
+
+	// Chart controls visibility
+	let showChartControls = $state(false);
 
 	// ---- local state / refs ----
 	let container; // div to hold the svg
@@ -405,7 +417,10 @@
 						x: event.clientX,
 						y: event.clientY,
 						year: dataPoint.date.getFullYear(),
-						count: mode === "proportion" ? dataPoint.count : (dataPoint.rawCount || dataPoint.count),
+						count:
+							mode === "proportion"
+								? dataPoint.count
+								: dataPoint.rawCount || dataPoint.count,
 						rank: rank
 					};
 				}
@@ -707,11 +722,23 @@
 		const handleFullscreenChange = () => {
 			isFullscreen = !!document.fullscreenElement;
 		};
-		document.addEventListener('fullscreenchange', handleFullscreenChange);
+		document.addEventListener("fullscreenchange", handleFullscreenChange);
 		return () => {
-			document.removeEventListener('fullscreenchange', handleFullscreenChange);
+			document.removeEventListener("fullscreenchange", handleFullscreenChange);
 		};
 	});
+
+	// Name options management
+	function addNameOption() {
+		if (newOptionInput.trim() && nameOptions.length < 6) {
+			nameOptions = [...nameOptions, newOptionInput.trim()];
+			newOptionInput = "";
+		}
+	}
+
+	function removeNameOption(index) {
+		nameOptions = nameOptions.filter((_, i) => i !== index);
+	}
 </script>
 
 <div class="fullscreen-wrapper" bind:this={fullscreenContainer}>
@@ -720,11 +747,33 @@
 	{/if}
 
 	<!-- title -->
-	<h2 class="chart-title">{isHidden ? "???" : name}</h2>
+	<h2 class="chart-title">Guess this name: {isHidden ? "???" : name}</h2>
+
+	<!-- Display name options when hidden -->
+	{#if isHidden && (playerMode ? externalNameOptions.length > 0 : nameOptions.length > 0)}
+		<div class="guess-options">
+			<strong>Choose from:</strong>
+			<div class="options-display">
+				{#each (playerMode ? externalNameOptions : nameOptions) as option, i}
+					<button
+						class="option-chip"
+						onclick={() => {
+							guessValue = option;
+							submitGuess();
+						}}>{option}</button
+					>
+					{#if i < (playerMode ? externalNameOptions : nameOptions).length - 1}<span class="separator">•</span>{/if}
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 	<div class="wrapper">
 		{#if isHidden && showGuessFeedback && !isCorrectGuess}
 			<div class="wrong-message">❌ Wrong! Try again</div>
+		{/if}
+		{#if isHidden && showGuessFeedback && isCorrectGuess}
+			<div class="correct-message">🎉 Correct! It's {hiddenName}! 🎉</div>
 		{/if}
 		<!-- container provides responsive width -->
 		<div
@@ -743,9 +792,13 @@
 				<div class="tooltip-name">{isHidden ? "???" : name}</div>
 				<div class="tooltip-count">
 					{#if mode === "proportion"}
-						{fmt(tooltip.count)} of U.S. babies<br />named {isHidden ? "???" : name}
+						{fmt(tooltip.count)} of U.S. babies<br />named {isHidden
+							? "???"
+							: name}
 					{:else}
-						{fmt(tooltip.count)} U.S. babies<br />named {isHidden ? "???" : name}
+						{fmt(tooltip.count)} U.S. babies<br />named {isHidden
+							? "???"
+							: name}
 					{/if}
 				</div>
 				{#if tooltip.rank > 0}
@@ -761,138 +814,225 @@
 
 	<!-- interactive controls -->
 	{#if showControls === true || showControls === "true"}
-	<div class="controls">
-	<div class="year-slider">
-		<label for="start-year">Start Year: {startYear}</label>
-		<input
-			id="start-year"
-			type="range"
-			min="1880"
-			max="2010"
-			step="10"
-			bind:value={startYear}
-			class="slider"
-		/>
-	</div>
-	<div class="mode-indicator" class:guess-mode={isHidden} class:search-mode={!isHidden}>
-		{#if isHidden}
-			<strong>GUESS MODE</strong>
-		{:else}
-			<strong>SEARCH MODE FOR {name.toUpperCase()}</strong>
-		{/if}
-	</div>
-
-	<!-- Search/Guess input row -->
-	<div class="row-controls input-row">
-		{#if !isHidden}
-			<div class="autocomplete">
+		<div class="controls">
+			<div class="year-slider">
+				<label for="start-year">Start Year: {startYear}</label>
 				<input
-					type="text"
-					value={inputValue}
-					oninput={handleInput}
-					onkeydown={handleKeydown}
-					onblur={handleBlur}
-					placeholder="Enter a name..."
-					class="name-input search-input"
+					id="start-year"
+					type="range"
+					min="1880"
+					max="2010"
+					step="10"
+					bind:value={startYear}
+					class="slider"
 				/>
-				{#if showSuggestions}
-					<ul class="suggestions">
-						{#each suggestions as suggestion, i}
-							<li
-								class:selected={i === selectedIndex}
-								onmousedown={() => selectName(suggestion)}
-							>
-								{suggestion}
-							</li>
-						{/each}
-					</ul>
+			</div>
+			<div
+				class="mode-indicator"
+				class:guess-mode={isHidden}
+				class:search-mode={!isHidden}
+			>
+				{#if isHidden}
+					<strong>GUESS MODE</strong>
+				{:else}
+					<strong>SEARCH MODE FOR {name.toUpperCase()}</strong>
 				{/if}
 			</div>
-		{:else}
-			<div class="autocomplete">
-				<input
-					type="text"
-					value={guessValue}
-					oninput={handleGuessInput}
-					onkeydown={handleGuessKeydown}
-					onblur={handleGuessBlur}
-					placeholder="Guess the name..."
-					class="name-input guess-input"
-				/>
-				{#if showGuessSuggestions}
-					<ul class="suggestions">
-						{#each guessSuggestions as suggestion, i}
-							<li
-								class:selected={i === guessSelectedIndex}
-								onmousedown={() => selectGuessName(suggestion)}
-							>
-								{suggestion}
-							</li>
-						{/each}
-					</ul>
+
+			<!-- Search/Guess input row -->
+			<div class="row-controls input-row">
+				{#if !isHidden && !playerMode}
+					<div class="autocomplete">
+						<input
+							type="text"
+							value={inputValue}
+							oninput={handleInput}
+							onkeydown={handleKeydown}
+							onblur={handleBlur}
+							placeholder="Enter a name..."
+							class="name-input search-input"
+						/>
+						{#if showSuggestions}
+							<ul class="suggestions">
+								{#each suggestions as suggestion, i}
+									<li
+										class:selected={i === selectedIndex}
+										onmousedown={() => selectName(suggestion)}
+									>
+										{suggestion}
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+				{:else}
+					<div class="autocomplete">
+						<input
+							type="text"
+							value={guessValue}
+							oninput={handleGuessInput}
+							onkeydown={handleGuessKeydown}
+							onblur={handleGuessBlur}
+							placeholder="Guess the name..."
+							class="name-input guess-input"
+						/>
+						{#if showGuessSuggestions}
+							<ul class="suggestions">
+								{#each guessSuggestions as suggestion, i}
+									<li
+										class:selected={i === guessSelectedIndex}
+										onmousedown={() => selectGuessName(suggestion)}
+									>
+										{suggestion}
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
 				{/if}
 			</div>
-		{/if}
-	</div>
 
-	{#if isHidden && showGuessFeedback && isCorrectGuess}
-		<div class="success-message">🎉 Correct! It's {hiddenName}! 🎉</div>
+			<!-- Action buttons row -->
+			<div class="row-controls buttons-row">
+				{#if !isHidden && !playerMode}
+					<button class="hide-btn" onclick={hideNameForGuessing}
+						>Hide Name & Play</button
+					>
+				{:else if isHidden}
+					<button class="submit-btn" onclick={submitGuess}>Guess Name</button>
+				{/if}
+			</div>
+
+			<!-- Optional name choices for guessing -->
+			{#if !playerMode}
+				<div class="row-controls input-row">
+					<div class="name-options-section">
+					<button
+						class="toggle-options-btn"
+						onclick={() => (showAddOptions = !showAddOptions)}
+					>
+						{showAddOptions ? "−" : "+"} Add Name Options {nameOptions.length >
+						0
+							? `(${nameOptions.length})`
+							: ""}
+					</button>
+
+					{#if showAddOptions}
+						<div class="add-options-container">
+							<div class="add-option-input">
+								<input
+									type="text"
+									bind:value={newOptionInput}
+									placeholder="Enter a name option..."
+									onkeydown={(e) => e.key === "Enter" && addNameOption()}
+									maxlength="50"
+								/>
+								<button
+									onclick={addNameOption}
+									disabled={nameOptions.length >= 6 || !newOptionInput.trim()}
+								>
+									Add
+								</button>
+							</div>
+							{#if nameOptions.length > 0}
+								<div class="options-list">
+									{#each nameOptions as option, i}
+										<div class="option-tag">
+											{option}
+											<button
+												class="remove-option"
+												onclick={() => removeNameOption(i)}>×</button
+											>
+										</div>
+									{/each}
+								</div>
+							{/if}
+							{#if nameOptions.length >= 6}
+								<div class="max-options-note">Maximum 6 options</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Chart controls accordion -->
+			<div class="row-controls input-row">
+				<div class="chart-controls-section">
+					<button
+						class="toggle-chart-controls-btn"
+						onclick={() => (showChartControls = !showChartControls)}
+					>
+						{showChartControls ? "−" : "+"} Chart Controls
+					</button>
+
+					{#if showChartControls}
+						<div class="chart-controls-container">
+							<div class="row-controls chart-controls-row">
+								<div class="sex-buttons">
+									<button
+										class:active={sex === "All"}
+										onclick={() => (sex = "All")}
+									>
+										All
+									</button>
+									<button
+										class:active={sex === "F"}
+										onclick={() => (sex = "F")}
+									>
+										Female
+									</button>
+									<button
+										class:active={sex === "M"}
+										onclick={() => (sex = "M")}
+									>
+										Male
+									</button>
+								</div>
+								<span class="pipe-separator">|</span>
+								<div class="mode-buttons">
+									<button
+										class:active={mode === "raw"}
+										onclick={() => (mode = "raw")}
+									>
+										Raw
+									</button>
+									<button
+										class:active={mode === "proportion"}
+										onclick={() => (mode = "proportion")}
+									>
+										Proportion
+									</button>
+								</div>
+							</div>
+							<div class="row-controls fullscreen-row">
+								<button class="fullscreen-btn" onclick={toggleFullscreen}>
+									{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+								</button>
+							</div>
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Reveal and Reset buttons (only in guess mode) -->
+			{#if isHidden && !playerMode}
+				<div class="row-controls buttons-row">
+					<div class="reveal-reset-group">
+						<button class="reveal-btn" onclick={revealName}>Reveal Answer</button>
+						<button class="reset-btn" onclick={resetGame}>Reset</button>
+					</div>
+				</div>
+			{/if}
+			{/if}
+		</div>
 	{/if}
-
-	<!-- Action buttons row -->
-	<div class="row-controls buttons-row">
-		{#if !isHidden}
-			<button class="hide-btn" onclick={hideNameForGuessing}
-				>Hide Name & Play</button
-			>
-		{:else}
-			<button class="submit-btn" onclick={submitGuess}>Guess</button>
-			<button class="reveal-btn" onclick={revealName}>Reveal Answer</button>
-			<button class="reset-btn" onclick={resetGame}>Reset</button>
-		{/if}
-	</div>
-
-	<!-- Chart controls row -->
-	<div class="chart-controls-label">CHART CONTROLS</div>
-	<div class="row-controls chart-controls-row">
-		<div class="sex-buttons">
-			<button class:active={sex === "All"} onclick={() => (sex = "All")}>
-				All
-			</button>
-			<button class:active={sex === "F"} onclick={() => (sex = "F")}>
-				Female
-			</button>
-			<button class:active={sex === "M"} onclick={() => (sex = "M")}>
-				Male
-			</button>
-		</div>
-		<span class="pipe-separator">|</span>
-		<div class="mode-buttons">
-			<button class:active={mode === "raw"} onclick={() => (mode = "raw")}>
-				Raw
-			</button>
-			<button
-				class:active={mode === "proportion"}
-				onclick={() => (mode = "proportion")}
-			>
-				Proportion
-			</button>
-		</div>
-	</div>
-	<div class="row-controls fullscreen-row">
-		<button class="fullscreen-btn" onclick={toggleFullscreen}>
-			{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-		</button>
-	</div>
-</div>
-{/if}
 </div>
 
 <style>
 	.chart-title {
 		font-size: 48px;
 		font-weight: 700;
-		color: #6B46C1;
+		color: #6b46c1;
 		margin: 0 0 20px 0;
 	}
 
@@ -950,13 +1090,15 @@
 		border: 2px solid #ddd;
 		border-radius: 6px;
 		outline: none;
-		transition: background 0.3s ease, border-color 0.3s ease;
+		transition:
+			background 0.3s ease,
+			border-color 0.3s ease;
 		box-sizing: border-box;
 	}
 
 	.name-input.search-input {
 		background: #e8d4f8;
-		border-color: #6B46C1;
+		border-color: #6b46c1;
 	}
 
 	.name-input.search-input:focus {
@@ -965,8 +1107,10 @@
 	}
 
 	.name-input.guess-input {
-		background: #ffd4e5;
-		border-color: #E85D75;
+		/* background: #ffd4e5; */
+		background: #ffffff;
+
+		border-color: #e85d75;
 	}
 
 	.name-input.guess-input:focus {
@@ -975,25 +1119,25 @@
 	}
 
 	.name-input:focus {
-		border-color: #6B46C1;
+		border-color: #6b46c1;
 	}
 
 	.suggestions {
 		position: absolute;
-		bottom: 100%;
+		top: 100%;
 		left: 0;
 		right: 0;
 		background: white;
-		border: 2px solid #6B46C1;
-		border-bottom: none;
-		border-radius: 6px 6px 0 0;
+		border: 2px solid #6b46c1;
+		border-top: none;
+		border-radius: 0 0 6px 6px;
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		max-height: 300px;
 		overflow-y: auto;
 		z-index: 1000;
-		box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
 	.suggestions li {
@@ -1025,7 +1169,8 @@
 		flex-shrink: 0;
 	}
 
-	.sex-buttons button {
+	.sex-buttons button,
+	.mode-buttons button {
 		flex: 1;
 		padding: 8px 16px;
 		font-size: 14px;
@@ -1037,29 +1182,17 @@
 		transition: all 0.2s;
 	}
 
-	.mode-buttons button {
-		flex: 1;
-		padding: 6px 12px;
-		font-size: 13px;
-		font-weight: 500;
-		background: white;
-		border: 2px solid #ddd;
-		border-radius: 6px;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
 	.sex-buttons button:hover,
 	.mode-buttons button:hover {
-		border-color: #6B46C1;
-		background: #F3EFFF;
+		border-color: #6b46c1;
+		background: #f3efff;
 	}
 
 	.sex-buttons button.active,
 	.mode-buttons button.active {
-		background: #6B46C1;
+		background: #6b46c1;
 		color: white;
-		border-color: #6B46C1;
+		border-color: #6b46c1;
 	}
 
 	.hide-btn {
@@ -1072,7 +1205,8 @@
 		border-radius: 6px;
 		cursor: pointer;
 		transition: all 0.2s;
-		flex: 1;
+		width: 100%;
+		max-width: 250px;
 	}
 
 	.hide-btn:hover {
@@ -1083,18 +1217,20 @@
 		padding: 12px 20px;
 		font-size: 16px;
 		font-weight: 600;
-		background: #6B46C1;
+		/* background: #6b46c1; */
+		background: #ff6b6b;
 		color: white;
 		border: none;
 		border-radius: 6px;
 		cursor: pointer;
 		transition: all 0.2s;
-		flex: 1;
+		width: 100%;
+		max-width: 250px;
 	}
 
-	.submit-btn:hover {
-		background: #5A3AA8;
-	}
+	/* .submit-btn:hover {
+		background: #5a3aa8;
+	} */
 
 	.reveal-btn {
 		padding: 12px 20px;
@@ -1106,7 +1242,8 @@
 		border-radius: 6px;
 		cursor: pointer;
 		transition: all 0.2s;
-		flex: 1;
+		width: 100%;
+		max-width: 250px;
 	}
 
 	.reveal-btn:hover {
@@ -1123,7 +1260,8 @@
 		border-radius: 6px;
 		cursor: pointer;
 		transition: all 0.2s;
-		flex: 1;
+		width: 100%;
+		max-width: 250px;
 	}
 
 	.reset-btn:hover {
@@ -1156,6 +1294,23 @@
 		max-width: 300px;
 	}
 
+	.correct-message {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		padding: 16px 24px;
+		background: #4caf50;
+		color: white;
+		border-radius: 6px;
+		font-size: 18px;
+		font-weight: 600;
+		text-align: center;
+		z-index: 1000;
+		max-width: 350px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+	}
+
 	.year-slider {
 		display: flex;
 		flex-direction: column;
@@ -1184,7 +1339,7 @@
 		width: 20px;
 		height: 20px;
 		border-radius: 50%;
-		background: #6B46C1;
+		background: #6b46c1;
 		cursor: pointer;
 	}
 
@@ -1192,7 +1347,7 @@
 		width: 20px;
 		height: 20px;
 		border-radius: 50%;
-		background: #6B46C1;
+		background: #6b46c1;
 		cursor: pointer;
 		border: none;
 	}
@@ -1281,6 +1436,13 @@
 		align-items: center;
 	}
 
+	.reveal-reset-group {
+		display: flex;
+		gap: 12px;
+		width: 100%;
+		max-width: 250px;
+	}
+
 	.chart-controls-row {
 		justify-content: center;
 		flex-wrap: wrap;
@@ -1314,7 +1476,7 @@
 	}
 
 	.fullscreen-wrapper:fullscreen {
-		background: #E6D5F5;
+		background: #e6d5f5;
 		padding: 40px;
 		overflow-y: auto;
 		display: flex;
@@ -1347,13 +1509,13 @@
 	}
 
 	.fullscreen-btn {
-		padding: 4px 8px;
-		font-size: 11px;
+		padding: 8px 16px;
+		font-size: 14px;
 		font-weight: 500;
-		background: #6B46C1;
+		background: #6b46c1;
 		color: white;
 		border: none;
-		border-radius: 4px;
+		border-radius: 6px;
 		cursor: pointer;
 		transition: all 0.2s;
 		width: auto;
@@ -1362,7 +1524,7 @@
 	}
 
 	.fullscreen-btn:hover {
-		background: #5A3AA8;
+		background: #5a3aa8;
 	}
 
 	.celebration {
@@ -1377,7 +1539,8 @@
 	}
 
 	@keyframes celebrate {
-		0%, 100% {
+		0%,
+		100% {
 			transform: translate(-50%, -50%) scale(1);
 		}
 		50% {
@@ -1445,5 +1608,209 @@
 		.buttons-row .mode-buttons {
 			width: 100%;
 		}
+	}
+
+	/* Name options styling */
+	.name-options-section {
+		flex: 1;
+		max-width: 250px;
+		margin: 0 auto;
+	}
+
+	.toggle-options-btn {
+		width: 100%;
+		padding: 8px 16px;
+		font-size: 14px;
+		font-weight: 500;
+		background: #6b46c1;
+		color: white;
+		border: 2px solid #6b46c1;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 0.2s;
+		text-align: left;
+	}
+
+	.toggle-options-btn:hover {
+		background: white;
+		color: #6b46c1;
+	}
+
+	.add-options-container {
+		margin-top: 8px;
+		padding: 12px;
+		/* background: #f9f9f9; */
+		border-radius: 6px;
+		border: 1px solid #ddd;
+	}
+
+	.add-option-input {
+		display: flex;
+		gap: 8px;
+		margin-bottom: 8px;
+	}
+
+	.add-option-input input {
+		flex: 1;
+		padding: 8px 12px;
+		font-size: 14px;
+		border: 2px solid #ddd;
+		border-radius: 6px;
+		outline: none;
+	}
+
+	.add-option-input input:focus {
+		border-color: #6b46c1;
+	}
+
+	.add-option-input button {
+		padding: 8px 16px;
+		font-size: 14px;
+		font-weight: 500;
+		background: #6b46c1;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.add-option-input button:hover:not(:disabled) {
+		background: #5a3aa8;
+	}
+
+	.add-option-input button:disabled {
+		background: #ccc;
+		cursor: not-allowed;
+	}
+
+	.options-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-bottom: 8px;
+	}
+
+	.option-tag {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 10px;
+		background: #6b46c1;
+		color: white;
+		border-radius: 16px;
+		font-size: 13px;
+		font-weight: 500;
+	}
+
+	.remove-option {
+		background: none;
+		border: none;
+		color: white;
+		font-size: 18px;
+		cursor: pointer;
+		padding: 0;
+		width: 18px;
+		height: 18px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: background 0.2s;
+	}
+
+	.remove-option:hover {
+		background: rgba(255, 255, 255, 0.2);
+	}
+
+	.max-options-note {
+		font-size: 12px;
+		color: #666;
+		font-style: italic;
+	}
+
+	.guess-options {
+		text-align: center;
+		padding: 12px;
+		background: #fff9e6;
+		border: 2px solid #ffd700;
+		border-radius: 6px;
+		margin-bottom: 12px;
+	}
+
+	.guess-options strong {
+		display: block;
+		margin-bottom: 8px;
+		color: #333;
+		font-size: 14px;
+	}
+
+	.options-display {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.option-chip {
+		display: inline-block;
+		padding: 6px 12px;
+		background: white;
+		border: 2px solid #ffd700;
+		border-radius: 16px;
+		font-size: 14px;
+		font-weight: 500;
+		color: #333;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.option-chip:hover {
+		background: #ffd700;
+		color: #000;
+		transform: scale(1.05);
+	}
+
+	.option-chip:active {
+		transform: scale(0.98);
+	}
+
+	.separator {
+		color: #999;
+		font-size: 12px;
+	}
+
+	/* Chart controls accordion */
+	.chart-controls-section {
+		flex: 1;
+		max-width: 250px;
+		margin: 0 auto;
+	}
+
+	.toggle-chart-controls-btn {
+		width: 100%;
+		padding: 8px 16px;
+		font-size: 14px;
+		font-weight: 500;
+		background: #6b46c1;
+		color: white;
+		border: 2px solid #6b46c1;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 0.2s;
+		text-align: left;
+	}
+
+	.toggle-chart-controls-btn:hover {
+		background: white;
+		color: #6b46c1;
+	}
+
+	.chart-controls-container {
+		margin-top: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
 	}
 </style>

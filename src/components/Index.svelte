@@ -9,6 +9,8 @@
 	import Figure from "$components/Figure.svelte";
 	import DotPlot from "$components/DotPlot.svelte";
 	import DotPlotSimple from "$components/DotPlotSimple.svelte";
+	import DotPlotMultiplayer from "$components/DotPlotMultiplayer.svelte";
+	import MultiplayerButton from "$components/MultiplayerButton.svelte";
 	import Versus from "$components/Versus.svelte";
 	import Table from "$components/Table.svelte";
 	import Grid from "$components/Grid.svelte";
@@ -17,7 +19,7 @@
 	const copy = getContext("copy");
 	const { body } = copy;
 	const { title, description, byline, others } = copy.meta;
-	const components = { Ul, Details, Swiper, DotPlot, DotPlotSimple, Versus, Figure, Table, Grid };
+	const components = { Ul, Details, Swiper, DotPlot, DotPlotSimple, DotPlotMultiplayer, MultiplayerButton, Versus, Figure, Table, Grid };
 	// const data = getContext("data");
 
 	onMount(() => {
