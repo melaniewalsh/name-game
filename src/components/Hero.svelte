@@ -1,10 +1,10 @@
 <script>
-	import Bear from "$components/Hero.Bear.svelte";
+	// import Bear from "$components/Hero.Bear.svelte";
 	const { title, description, byline, others } = $props();
 </script>
 
 <section id="hero">
-	<Bear />
+	<!-- <Bear /> -->
 
 	<div class="c">
 		<h1 class="text-outline">{title}</h1>
@@ -27,7 +27,7 @@
 	}
 
 	h1 {
-		color: var(--color-blue-light);
+		color: #B39DDB;
 		--color-text-outline: var(--color-fg);
 		--stroke-width: 2px;
 		letter-spacing: 0.0325em;
@@ -45,7 +45,7 @@
 			var(--stroke-width-n) var(--stroke-width) 0
 				var(--color-text-outline, #fff),
 			var(--stroke-width-n) 0 0 var(--color-text-outline, #fff),
-			8px 8px var(--color-blue);
+			8px 8px #6B46C1;
 	}
 
 	h1,

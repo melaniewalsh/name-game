@@ -40,6 +40,9 @@
 	},
 	"browserslist": "> 0.5%, last 4 versions, not ie <= 11, not ie_mob <= 11",
 	"dependencies": {
+		"canvas-confetti": "^1.9.3",
+		"d3-format": "^3.1.0",
+		"layercake": "^8.4.4",
 		"lodash": "^4.17.21",
 		"swiper": "^11.2.6"
 	}

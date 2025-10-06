@@ -13,9 +13,6 @@
 			<div class="top">
 				<div class="panel">
 					<h2>{summary.title}</h2>
-					<div class="read-more" class:visible={!open}>
-						<span>{@html clockSvg}</span>Click to read more ({summary.time})
-					</div>
 				</div>
 
 				<div class="panel">
@@ -70,11 +67,11 @@
 	summary {
 		position: relative;
 		background: transparent;
-		border: 4px solid var(--color-fg);
+		border: 3px solid #6B46C1;
 		list-style: none;
 		border-radius: var(--border-radius);
-		background: var(--color-orange-light);
-		padding: 1rem 2rem;
+		background: #F3EFFF;
+		padding: 1.5rem 2rem;
 	}
 
 	summary::-webkit-details-marker {
@@ -91,58 +88,39 @@
 
 	.top {
 		display: flex;
+		flex-direction: column;
 		gap: 1rem;
+		align-items: center;
 	}
 
 	ul {
-		margin-left: 2rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
 	}
 
 	li {
-		line-height: 1.125;
-		margin: 0.25rem 0;
+		line-height: 1.4;
+		margin: 0.5rem 0;
+		font-size: var(--18px);
+		color: #6B46C1;
+		font-weight: 500;
 	}
 
 	.panel {
-		flex: 1;
-		padding: 1rem;
-		background: white;
-		border-radius: 8px;
+		width: 100%;
+		text-align: center;
 	}
 
 	.panel:first-of-type {
 		align-items: center;
-		justify-content: space-evenly;
+		justify-content: center;
 		display: flex;
 		flex-direction: column;
 	}
 
 	.panel:nth-of-type(2) {
-		font-size: var(--22px);
-	}
-
-	.read-more {
-		display: flex;
-		align-items: center;
-		visibility: hidden;
-		font-weight: bold;
-		text-decoration: underline;
 		font-size: var(--18px);
-	}
-
-	.read-more.visible {
-		visibility: visible;
-	}
-
-	.read-more span {
-		margin-right: 0.3rem;
-		height: 20px;
-		width: 20px;
-	}
-
-	:global(.read-more svg) {
-		width: 100%;
-		height: 100%;
 	}
 
 	.arrow {
@@ -150,12 +128,12 @@
 		bottom: 0;
 		right: 50%;
 		transform: translate(50%, 50%);
-		background: var(--color-blue-light);
-		border: 3px solid black;
+		background: #B39DDB;
+		border: 3px solid #6B46C1;
 		border-radius: 1rem;
 		padding: 0.5rem;
-		height: 70px;
-		width: 70px;
+		height: 60px;
+		width: 60px;
 	}
 
 	:global(.arrow svg) {
@@ -172,39 +150,22 @@
 	}
 
 	:global(.arrow svg path) {
-		stroke: black;
+		stroke: #6B46C1;
 		stroke-width: 3px;
-		fill: var(--color-blue);
+		fill: #6B46C1;
 	}
 
 	summary h2 {
-		font-size: var(--64px);
-		margin: 1rem;
+		font-size: var(--48px);
+		margin: 0.5rem;
 		text-align: center;
-		color: var(--color-blue-light);
-		--color-text-outline: var(--color-fg);
-		--stroke-width: 2px;
-		letter-spacing: 0.0325em;
-		line-height: 0.9;
-		--stroke-width-n: calc(var(--stroke-width) * -1);
-		text-shadow:
-			var(--stroke-width-n) var(--stroke-width-n) 0
-				var(--color-text-outline, #fff),
-			0 var(--stroke-width-n) 0 var(--color-text-outline, #fff),
-			var(--stroke-width) var(--stroke-width-n) 0
-				var(--color-text-outline, #fff),
-			var(--stroke-width) 0 0 var(--color-text-outline, #fff),
-			var(--stroke-width) var(--stroke-width) 0 var(--color-text-outline, #fff),
-			0 var(--stroke-width) 0 var(--color-text-outline, #fff),
-			var(--stroke-width-n) var(--stroke-width) 0
-				var(--color-text-outline, #fff),
-			var(--stroke-width-n) 0 0 var(--color-text-outline, #fff),
-			8px 8px var(--color-blue);
+		color: #6B46C1;
+		font-weight: 700;
 	}
 
 	#conclusion-collapsible h2,
 	#methods-collapsible h2 {
-		font-size: var(--48px);
+		font-size: var(--40px);
 	}
 
 	@media (max-width: 768px) {

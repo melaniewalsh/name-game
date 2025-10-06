@@ -29,7 +29,7 @@
 </article>
 
 <svelte:boundary onerror={(e) => console.error(e)}>
-	<Footer recirc={true} />
+	<Footer recirc={false} />
 </svelte:boundary>
 
 <style>
