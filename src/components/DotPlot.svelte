@@ -18,25 +18,27 @@
 		csvUrl = `${base}/data/ssa_babynames_filtered.csv`, // file in static/data/
 		height = 360, // total SVG height
 		defaultName = "Emma", // default name to display
-		startHidden = false // start in hidden/guess mode
+		startHidden = false, // start in hidden/guess mode
+		startYear: propStartYear = 1880, // start year for x-axis
+		showControls = true // show or hide all controls
 	} = $props();
 
 	// ---- interactive state ----
 	let name = $state(defaultName); // one name to plot (F+M total or single sex)
 	let sex = $state("All"); // 'All' | 'F' | 'M'
 	let mode = $state("raw"); // 'raw' | 'proportion'
+	let startYear = $state(typeof propStartYear === 'string' ? parseInt(propStartYear) : propStartYear);
 
 	// Reactive margin based on mode
 	let margin = $derived(
 		mode === "proportion"
-			? { top: 10, right: 0, bottom: 30, left: 50 }
-			: { top: 10, right: 0, bottom: 30, left: 35 }
+			? { top: 10, right: 10, bottom: 30, left: 50 }
+			: { top: 10, right: 10, bottom: 30, left: 35 }
 	);
 	let inputValue = $state(defaultName);
 	let showSuggestions = $state(false);
 	let suggestions = $state([]);
 	let selectedIndex = $state(-1);
-	let startYear = $state(1920);
 	let isFullscreen = $state(false);
 	let fullscreenContainer;
 
@@ -126,7 +128,7 @@
 		all = rows.filter(Boolean);
 		const ext = d3.extent(all, (d) => d.year);
 		if (Number.isFinite(ext[0]) && Number.isFinite(ext[1])) {
-			yearRange = [ext[0], ext[1] + 1]; // Add 1 year padding
+			yearRange = [ext[0], 2030]; // Extend to 2030 to show round decade
 		}
 
 		// Get unique names
@@ -497,6 +499,21 @@
 		isHidden = false;
 		hiddenName = "";
 		guessValue = "";
+		inputValue = "";
+		showGuessSuggestions = false;
+		showSuggestions = false;
+		showGuessSuccess = false;
+		showGuessFeedback = false;
+		isCorrectGuess = false;
+	}
+
+	function resetGame() {
+		isHidden = false;
+		hiddenName = "";
+		guessValue = "";
+		inputValue = "";
+		showGuessSuggestions = false;
+		showSuggestions = false;
 		showGuessSuccess = false;
 		showGuessFeedback = false;
 		isCorrectGuess = false;
@@ -706,6 +723,9 @@
 	<h2 class="chart-title">{isHidden ? "???" : name}</h2>
 
 	<div class="wrapper">
+		{#if isHidden && showGuessFeedback && !isCorrectGuess}
+			<div class="wrong-message">❌ Wrong! Try again</div>
+		{/if}
 		<!-- container provides responsive width -->
 		<div
 			class="chart-container"
@@ -740,6 +760,7 @@
 	</div>
 
 	<!-- interactive controls -->
+	{#if showControls === true || showControls === "true"}
 	<div class="controls">
 	<div class="year-slider">
 		<label for="start-year">Start Year: {startYear}</label>
@@ -753,7 +774,16 @@
 			class="slider"
 		/>
 	</div>
-	<div class="row-controls">
+	<div class="mode-indicator" class:guess-mode={isHidden} class:search-mode={!isHidden}>
+		{#if isHidden}
+			<strong>GUESS MODE</strong>
+		{:else}
+			<strong>SEARCH MODE FOR {name.toUpperCase()}</strong>
+		{/if}
+	</div>
+
+	<!-- Search/Guess input row -->
+	<div class="row-controls input-row">
 		{#if !isHidden}
 			<div class="autocomplete">
 				<input
@@ -763,7 +793,7 @@
 					onkeydown={handleKeydown}
 					onblur={handleBlur}
 					placeholder="Enter a name..."
-					class="name-input"
+					class="name-input search-input"
 				/>
 				{#if showSuggestions}
 					<ul class="suggestions">
@@ -803,6 +833,28 @@
 				{/if}
 			</div>
 		{/if}
+	</div>
+
+	{#if isHidden && showGuessFeedback && isCorrectGuess}
+		<div class="success-message">🎉 Correct! It's {hiddenName}! 🎉</div>
+	{/if}
+
+	<!-- Action buttons row -->
+	<div class="row-controls buttons-row">
+		{#if !isHidden}
+			<button class="hide-btn" onclick={hideNameForGuessing}
+				>Hide Name & Play</button
+			>
+		{:else}
+			<button class="submit-btn" onclick={submitGuess}>Guess</button>
+			<button class="reveal-btn" onclick={revealName}>Reveal Answer</button>
+			<button class="reset-btn" onclick={resetGame}>Reset</button>
+		{/if}
+	</div>
+
+	<!-- Chart controls row -->
+	<div class="chart-controls-label">CHART CONTROLS</div>
+	<div class="row-controls chart-controls-row">
 		<div class="sex-buttons">
 			<button class:active={sex === "All"} onclick={() => (sex = "All")}>
 				All
@@ -814,22 +866,7 @@
 				Male
 			</button>
 		</div>
-	</div>
-	{#if isHidden && showGuessFeedback && !isCorrectGuess}
-		<div class="wrong-message">❌ Wrong! Try again</div>
-	{/if}
-	{#if isHidden && showGuessFeedback && isCorrectGuess}
-		<div class="success-message">🎉 Correct! It's {hiddenName}! 🎉</div>
-	{/if}
-	<div class="row-controls">
-		{#if !isHidden}
-			<button class="hide-btn" onclick={hideNameForGuessing}
-				>Hide Name & Guess</button
-			>
-		{:else}
-			<button class="submit-btn" onclick={submitGuess}>Submit Guess</button>
-			<button class="reveal-btn" onclick={revealName}>Reveal</button>
-		{/if}
+		<span class="pipe-separator">|</span>
 		<div class="mode-buttons">
 			<button class:active={mode === "raw"} onclick={() => (mode = "raw")}>
 				Raw
@@ -842,12 +879,13 @@
 			</button>
 		</div>
 	</div>
-	<div class="row-controls">
+	<div class="row-controls fullscreen-row">
 		<button class="fullscreen-btn" onclick={toggleFullscreen}>
 			{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
 		</button>
 	</div>
 </div>
+{/if}
 </div>
 
 <style>
@@ -872,6 +910,26 @@
 		margin-right: auto;
 	}
 
+	.mode-indicator {
+		text-align: center;
+		padding: 8px 16px;
+		margin-bottom: 8px;
+		font-size: 14px;
+		transition: color 0.3s ease;
+	}
+
+	.mode-indicator.search-mode {
+		color: #4a1d7a;
+	}
+
+	.mode-indicator.guess-mode {
+		color: #8b1538;
+	}
+
+	.mode-indicator strong {
+		color: inherit;
+	}
+
 	.row-controls {
 		display: flex;
 		gap: 12px;
@@ -881,6 +939,8 @@
 	.autocomplete {
 		position: relative;
 		flex: 1;
+		max-width: 500px;
+		margin: 0 auto;
 	}
 
 	.name-input {
@@ -890,8 +950,28 @@
 		border: 2px solid #ddd;
 		border-radius: 6px;
 		outline: none;
-		transition: border-color 0.2s;
+		transition: background 0.3s ease, border-color 0.3s ease;
 		box-sizing: border-box;
+	}
+
+	.name-input.search-input {
+		background: #e8d4f8;
+		border-color: #6B46C1;
+	}
+
+	.name-input.search-input:focus {
+		border-color: #4a1d7a;
+		background: #d9c2f0;
+	}
+
+	.name-input.guess-input {
+		background: #ffd4e5;
+		border-color: #E85D75;
+	}
+
+	.name-input.guess-input:focus {
+		border-color: #8b1538;
+		background: #ffc2d9;
 	}
 
 	.name-input:focus {
@@ -1033,6 +1113,23 @@
 		background: #f57c00;
 	}
 
+	.reset-btn {
+		padding: 12px 20px;
+		font-size: 16px;
+		font-weight: 600;
+		background: #999;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 0.2s;
+		flex: 1;
+	}
+
+	.reset-btn:hover {
+		background: #777;
+	}
+
 	.success-message {
 		padding: 16px;
 		background: #4caf50;
@@ -1044,6 +1141,10 @@
 	}
 
 	.wrong-message {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
 		padding: 12px;
 		background: #f44336;
 		color: white;
@@ -1051,7 +1152,8 @@
 		font-size: 16px;
 		font-weight: 600;
 		text-align: center;
-		width: 100%;
+		z-index: 1000;
+		max-width: 300px;
 	}
 
 	.year-slider {
@@ -1071,7 +1173,7 @@
 		width: 100%;
 		height: 6px;
 		border-radius: 3px;
-		background: #ddd;
+		background: #333;
 		outline: none;
 		-webkit-appearance: none;
 	}
@@ -1169,6 +1271,48 @@
 		width: 100%;
 	}
 
+	.input-row {
+		justify-content: center;
+	}
+
+	.buttons-row {
+		justify-content: center;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.chart-controls-row {
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.pipe-separator {
+		font-size: 18px;
+		color: #999;
+		margin: 0 8px;
+	}
+
+	@media (max-width: 600px) {
+		.chart-controls-row {
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		.pipe-separator {
+			display: none;
+		}
+	}
+
+	.chart-controls-label {
+		text-align: center;
+		font-size: 12px;
+		font-weight: 600;
+		color: #666;
+		margin-top: 8px;
+		margin-bottom: 4px;
+		letter-spacing: 0.5px;
+	}
+
 	.fullscreen-wrapper:fullscreen {
 		background: #E6D5F5;
 		padding: 40px;
@@ -1203,16 +1347,18 @@
 	}
 
 	.fullscreen-btn {
-		padding: 6px 12px;
-		font-size: 13px;
+		padding: 4px 8px;
+		font-size: 11px;
 		font-weight: 500;
 		background: #6B46C1;
 		color: white;
 		border: none;
-		border-radius: 6px;
+		border-radius: 4px;
 		cursor: pointer;
 		transition: all 0.2s;
-		width: 100%;
+		width: auto;
+		max-width: 150px;
+		margin: 0 auto;
 	}
 
 	.fullscreen-btn:hover {
@@ -1236,6 +1382,68 @@
 		}
 		50% {
 			transform: translate(-50%, -50%) scale(1.2);
+		}
+	}
+
+	/* Desktop Layout */
+	@media (min-width: 769px) {
+		.mobile-only {
+			display: none !important;
+		}
+
+		/* Desktop: hide Hide/Submit buttons from search row, they're in buttons-row */
+		.search-row .hide-btn,
+		.search-row .submit-btn,
+		.search-row .reveal-btn {
+			display: none;
+		}
+	}
+
+	/* Mobile Layout */
+	@media (max-width: 768px) {
+		/* Hide fullscreen button on mobile */
+		.fullscreen-row {
+			display: none;
+		}
+
+		/* Hide desktop sex buttons, show mobile ones */
+		.desktop-only {
+			display: none;
+		}
+
+		.mobile-only {
+			display: flex;
+		}
+
+		/* Mobile: show Hide/Submit buttons in search row */
+		.search-row .hide-btn,
+		.search-row .submit-btn,
+		.search-row .reveal-btn {
+			display: block;
+			white-space: nowrap;
+			flex-shrink: 0;
+			min-width: auto;
+			padding: 10px 12px;
+			font-size: 14px;
+		}
+
+		/* Mobile: search row has input + button side by side */
+		.search-row .autocomplete {
+			flex: 1;
+		}
+
+		/* Mobile: buttons-row has sex + mode buttons stacked */
+		.buttons-row {
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		.buttons-row .sex-buttons {
+			width: 100%;
+		}
+
+		.buttons-row .mode-buttons {
+			width: 100%;
 		}
 	}
 </style>
