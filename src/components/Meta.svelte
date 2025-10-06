@@ -2,7 +2,7 @@
 	let {
 		title = "Title TK",
 		description = "Description TK",
-		url = "https://melaniewalsh.github.io/baby-name-game",
+		url = "https://melaniewalsh.github.io/name-game",
 		keywords = "",
 		preloadFont = []
 	} = $props();
