@@ -438,6 +438,65 @@
 		}
 	}
 
+	// Touch event handlers for mobile support
+	let touchStartY = null;
+	let touchedName = null;
+
+	function handleTouchStart(event, name) {
+		touchedName = name;
+		draggedName = name;
+		touchStartY = event.touches[0].clientY;
+	}
+
+	function handleTouchMove(event) {
+		if (!touchedName) return;
+
+		// Get the touch position
+		const touch = event.touches[0];
+		const element = document.elementFromPoint(touch.clientX, touch.clientY);
+
+		// Check if we're over a drop zone
+		if (element && element.closest('.chart-drop-zone')) {
+			const dropZone = element.closest('.chart-drop-zone');
+			const dropZones = document.querySelectorAll('.chart-drop-zone');
+			if (dropZone === dropZones[0]) {
+				dropZone1Highlight = true;
+				dropZone2Highlight = false;
+			} else if (dropZone === dropZones[1]) {
+				dropZone1Highlight = false;
+				dropZone2Highlight = true;
+			}
+		} else {
+			dropZone1Highlight = false;
+			dropZone2Highlight = false;
+		}
+	}
+
+	function handleTouchEnd(event) {
+		if (!touchedName) return;
+
+		// Get the final touch position
+		const touch = event.changedTouches[0];
+		const element = document.elementFromPoint(touch.clientX, touch.clientY);
+
+		// Check if we dropped on a drop zone
+		if (element && element.closest('.chart-drop-zone')) {
+			const dropZone = element.closest('.chart-drop-zone');
+			const dropZones = document.querySelectorAll('.chart-drop-zone');
+			if (dropZone === dropZones[0]) {
+				handleDrop(1);
+			} else if (dropZone === dropZones[1]) {
+				handleDrop(2);
+			}
+		}
+
+		// Reset state
+		touchedName = null;
+		draggedName = null;
+		dropZone1Highlight = false;
+		dropZone2Highlight = false;
+	}
+
 	function reset() {
 		isHidden = false;
 		guess1 = "";
@@ -612,6 +671,9 @@
 					draggable="true"
 					ondragstart={() => handleDragStart(name1)}
 					ondragend={handleDragEnd}
+					ontouchstart={(e) => handleTouchStart(e, name1)}
+					ontouchmove={handleTouchMove}
+					ontouchend={handleTouchEnd}
 				>
 					{name1}
 				</div>
@@ -623,6 +685,9 @@
 					draggable="true"
 					ondragstart={() => handleDragStart(name2)}
 					ondragend={handleDragEnd}
+					ontouchstart={(e) => handleTouchStart(e, name2)}
+					ontouchmove={handleTouchMove}
+					ontouchend={handleTouchEnd}
 				>
 					{name2}
 				</div>
@@ -849,6 +914,8 @@
 		font-size: 18px;
 		font-weight: 600;
 		user-select: none;
+		-webkit-user-select: none;
+		touch-action: none;
 		transition: all 0.2s;
 	}
 
