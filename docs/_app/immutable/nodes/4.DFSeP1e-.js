@@ -1,0 +1,1 @@
+import"../chunks/Bzak7iHL.js";import{q as e,$ as o}from"../chunks/6QfFowuy.js";import{V as r}from"../chunks/Cgwed7DV.js";function i(a){e(t=>{o.title="Versus Multiplayer - Baby Name Game"}),r(a,{})}export{i as component};

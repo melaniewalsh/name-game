@@ -9,21 +9,22 @@
 		<link href="../_app/immutable/assets/0.B8G2lhty.css" rel="stylesheet">
 		<link href="../_app/immutable/assets/VersusMultiplayer.r4zoPQtN.css" rel="stylesheet">
 		<link href="../_app/immutable/assets/4.DXyXTqx7.css" rel="stylesheet">
-		<link rel="modulepreload" href="../_app/immutable/entry/start.C40mILCg.js">
-		<link rel="modulepreload" href="../_app/immutable/chunks/LAoRqITq.js">
+		<link rel="modulepreload" href="../_app/immutable/entry/start.Coy-BWpx.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/BDwmSfqJ.js">
 		<link rel="modulepreload" href="../_app/immutable/chunks/DWQsb6ku.js">
 		<link rel="modulepreload" href="../_app/immutable/chunks/6QfFowuy.js">
-		<link rel="modulepreload" href="../_app/immutable/chunks/DTA2FNPw.js">
-		<link rel="modulepreload" href="../_app/immutable/entry/app.BQ2Joyr5.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/BWH3cX9Z.js">
+		<link rel="modulepreload" href="../_app/immutable/entry/app.DQqeyYqG.js">
 		<link rel="modulepreload" href="../_app/immutable/chunks/Bzak7iHL.js">
 		<link rel="modulepreload" href="../_app/immutable/chunks/DVQw_HwI.js">
 		<link rel="modulepreload" href="../_app/immutable/chunks/ClhDQR8P.js">
 		<link rel="modulepreload" href="../_app/immutable/chunks/D8Gj2VHK.js">
-		<link rel="modulepreload" href="../_app/immutable/nodes/0.yq15pqzZ.js">
+		<link rel="modulepreload" href="../_app/immutable/nodes/0._HE1BBr0.js">
 		<link rel="modulepreload" href="../_app/immutable/chunks/D02pvyNW.js">
-		<link rel="modulepreload" href="../_app/immutable/nodes/4.DD6orfUy.js">
-		<link rel="modulepreload" href="../_app/immutable/chunks/dcZJDRxx.js">
-		<link rel="modulepreload" href="../_app/immutable/chunks/Dsj1Loz4.js"><!--[--><link rel="icon" href="../favicon.svg" type="image/svg+xml"><!--]--><!--[--><!--]--><title>Versus Multiplayer - Baby Name Game</title>
+		<link rel="modulepreload" href="../_app/immutable/nodes/4.DFSeP1e-.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/Cgwed7DV.js">
+		<link rel="modulepreload" href="../_app/immutable/chunks/DKUjTjd3.js">
+		<link rel="modulepreload" href="../_app/env.js"><!--[--><link rel="icon" href="../favicon.svg" type="image/svg+xml"><!--]--><!--[--><!--]--><title>Versus Multiplayer - Baby Name Game</title>
 </head>
 
 <body>
@@ -32,22 +33,27 @@
 			
 			<script>
 				{
-					__sveltekit_kp96hp = {
+					__sveltekit_adth2z = {
 						base: new URL("..", location).pathname.slice(0, -1),
-						assets: "/name-game"
+						assets: "/name-game",
+						env: null
 					};
 
 					const element = document.currentScript.parentElement;
 
-					Promise.all([
-						import("../_app/immutable/entry/start.C40mILCg.js"),
-						import("../_app/immutable/entry/app.BQ2Joyr5.js")
-					]).then(([kit, app]) => {
-						kit.start(app, element, {
-							node_ids: [0, 4],
-							data: [null,null],
-							form: null,
-							error: null
+					import("../_app/env.js").then(({ env }) => {
+						__sveltekit_adth2z.env = env;
+
+						Promise.all([
+							import("../_app/immutable/entry/start.Coy-BWpx.js"),
+							import("../_app/immutable/entry/app.DQqeyYqG.js")
+						]).then(([kit, app]) => {
+							kit.start(app, element, {
+									node_ids: [0, 4],
+									data: [null,null],
+									form: null,
+									error: null
+								});
 						});
 					});
 				}

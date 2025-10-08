@@ -1,16 +1,17 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
 import { browser } from '$app/environment';
+import { env } from '$env/dynamic/public';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDN0J2BPQMFf94PTf9vFUP06ch_mnWgwKk",
-  authDomain: "whats-that-baby-name.firebaseapp.com",
-  databaseURL: "https://whats-that-baby-name-default-rtdb.firebaseio.com",
-  projectId: "whats-that-baby-name",
-  storageBucket: "whats-that-baby-name.firebasestorage.app",
-  messagingSenderId: "745159343349",
-  appId: "1:745159343349:web:c82e326848131219d099bc",
-  measurementId: "G-RXPG66NEMR"
+  apiKey: env.PUBLIC_FIREBASE_API_KEY,
+  authDomain: env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+  databaseURL: env.PUBLIC_FIREBASE_DATABASE_URL,
+  projectId: env.PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: env.PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: env.PUBLIC_FIREBASE_APP_ID,
+  measurementId: env.PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase (only in browser and only if it hasn't been initialized)

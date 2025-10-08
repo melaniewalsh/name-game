@@ -1,1 +1,1 @@
-export const env={}
+export const env={"PUBLIC_FIREBASE_API_KEY":"AIzaSyDN0J2BPQMFf94PTf9vFUP06ch_mnWgwKk","PUBLIC_FIREBASE_AUTH_DOMAIN":"whats-that-baby-name.firebaseapp.com","PUBLIC_FIREBASE_DATABASE_URL":"https://whats-that-baby-name-default-rtdb.firebaseio.com","PUBLIC_FIREBASE_PROJECT_ID":"whats-that-baby-name","PUBLIC_FIREBASE_STORAGE_BUCKET":"whats-that-baby-name.firebasestorage.app","PUBLIC_FIREBASE_MESSAGING_SENDER_ID":"745159343349","PUBLIC_FIREBASE_APP_ID":"1:745159343349:web:c82e326848131219d099bc","PUBLIC_FIREBASE_MEASUREMENT_ID":"G-RXPG66NEMR"}
