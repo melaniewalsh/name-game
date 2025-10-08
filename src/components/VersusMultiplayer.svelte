@@ -2,12 +2,11 @@
 	import { onMount, onDestroy } from "svelte";
 	import { browser } from "$app/environment";
 	import { base } from "$app/paths";
-	import { goto } from "$app/navigation";
 	import { database } from "$lib/firebase";
 	import { ref, set, onValue, push, update, off } from "firebase/database";
-	import DotPlot from "$components/DotPlot.svelte";
+	import Versus from "$components/Versus.svelte";
 
-	const { id = "multiplayer-game" } = $props();
+	const { id = "multiplayer-versus-game" } = $props();
 
 	// Game state
 	let gameMode = $state("menu"); // 'menu' | 'host' | 'player'
@@ -20,11 +19,10 @@
 	let roomRef = null;
 	let playersRef = null;
 	let playerId = $state("");
-	let dotPlotComponent = $state(null);
 	let hostChartElement = $state(null);
 	let playerChartElement = $state(null);
-	let playerGuessInput = $state("");
 	let playerLastGuessResult = $state(null); // 'correct' | 'incorrect' | null
+	let lastSubmittedGuess = $state(""); // Track last submitted guess to prevent duplicates
 
 	// Game configuration
 	let maxAttempts = $state(3);
@@ -49,8 +47,6 @@
 
 	// Create a new game room
 	async function createRoom() {
-		console.log("[createRoom] Function called");
-		console.trace("[createRoom] Call stack");
 		if (!browser || !database) {
 			alert("Firebase is not initialized. Please refresh the page.");
 			return;
@@ -62,31 +58,16 @@
 
 		playerName = playerNameInput.trim();
 		roomCode = generateRoomCode();
-		console.log("[createRoom] Generated room code:", roomCode);
 		playerId = push(ref(database)).key;
 
-		// Update URL with the new room code
-		if (browser) {
-			const url = new URL(window.location.href);
-			url.searchParams.set("room", roomCode);
-			goto(url.pathname + url.search, {
-				replaceState: false,
-				noScroll: true,
-				keepFocus: true
-			});
-			console.log("[createRoom] Updated URL to:", url.toString());
-		}
-
 		// Create room in Firebase
-		roomRef = ref(database, `rooms/${roomCode}`);
+		roomRef = ref(database, `versus-rooms/${roomCode}`);
 		await set(roomRef, {
 			host: playerId,
 			hostName: playerName,
-			hiddenName: "",
+			name1: "",
+			name2: "",
 			isHidden: false,
-			nameOptions: [],
-			lettersRevealed: 0,
-			isRevealed: false,
 			createdAt: Date.now(),
 			gameStarted: false,
 			maxAttempts: maxAttempts,
@@ -95,17 +76,22 @@
 		});
 
 		// Add host as first player
-		const playerRef = ref(database, `rooms/${roomCode}/players/${playerId}`);
+		const playerRef = ref(
+			database,
+			`versus-rooms/${roomCode}/players/${playerId}`
+		);
 		await set(playerRef, {
 			name: playerName,
 			score: 0,
-			lastGuess: "",
+			lastGuess1: "",
+			lastGuess2: "",
 			isCorrect: false,
 			attemptCount: 0,
 			joinedAt: Date.now()
 		});
 
 		gameMode = "host";
+		updateURL();
 		listenToRoom();
 	}
 
@@ -128,40 +114,33 @@
 		roomCode = roomCodeInput.trim().toUpperCase();
 		playerId = push(ref(database)).key;
 
-		// Update URL with the room code
-		if (browser) {
-			const url = new URL(window.location.href);
-			url.searchParams.set("room", roomCode);
-			goto(url.pathname + url.search, {
-				replaceState: false,
-				noScroll: true,
-				keepFocus: true
-			});
-			console.log("[joinRoom] Updated URL to:", url.toString());
-		}
-
 		// Check if room exists
-		roomRef = ref(database, `rooms/${roomCode}`);
+		roomRef = ref(database, `versus-rooms/${roomCode}`);
 
 		// Add player to room
-		const playerRef = ref(database, `rooms/${roomCode}/players/${playerId}`);
+		const playerRef = ref(
+			database,
+			`versus-rooms/${roomCode}/players/${playerId}`
+		);
 		await set(playerRef, {
 			name: playerName,
 			score: 0,
-			lastGuess: "",
+			lastGuess1: "",
+			lastGuess2: "",
 			isCorrect: false,
 			attemptCount: 0,
 			joinedAt: Date.now()
 		});
 
 		gameMode = "player";
+		updateURL();
 		listenToRoom();
 	}
 
 	// Listen to room updates
 	function listenToRoom() {
 		// Listen to game state
-		roomRef = ref(database, `rooms/${roomCode}`);
+		roomRef = ref(database, `versus-rooms/${roomCode}`);
 		onValue(roomRef, (snapshot) => {
 			if (snapshot.exists()) {
 				gameState = snapshot.val();
@@ -169,7 +148,7 @@
 		});
 
 		// Listen to players
-		playersRef = ref(database, `rooms/${roomCode}/players`);
+		playersRef = ref(database, `versus-rooms/${roomCode}/players`);
 		onValue(playersRef, (snapshot) => {
 			if (snapshot.exists()) {
 				const playersData = snapshot.val();
@@ -188,77 +167,16 @@
 		}
 	}
 
-	// Track the last known game state from DotPlot
-	let lastKnownName = $state("");
+	// Track the last known names before hiding
+	let lastKnownName1 = $state("");
+	let lastKnownName2 = $state("");
 	let lastIsHidden = $state(false);
-
-	// Handle state changes from DotPlot component
-	function handleDotPlotStateChange(state) {
-		console.log("[handleDotPlotStateChange] Received state:", state);
-
-		if (gameMode === "host" && gameState) {
-			const {
-				name,
-				isHidden,
-				nameOptions: options,
-				lettersRevealed: letters,
-				isRevealed
-			} = state;
-
-			// Check if state actually changed
-			if (
-				gameState.isHidden !== isHidden ||
-				gameState.hiddenName !== name ||
-				JSON.stringify(gameState.nameOptions || []) !==
-					JSON.stringify(options || []) ||
-				gameState.lettersRevealed !== letters ||
-				gameState.isRevealed !== isRevealed
-			) {
-				console.log(
-					"[handleDotPlotStateChange] State changed, updating Firebase"
-				);
-
-				// If transitioning from revealed to hidden (starting new round), reset attempts
-				if (!lastIsHidden && isHidden) {
-					console.log(
-						"[handleDotPlotStateChange] New round starting, resetting attempts"
-					);
-					resetAllPlayersAttempts().then(() => {
-						updateGameState({
-							isHidden,
-							hiddenName: name,
-							nameOptions: options || [],
-							lettersRevealed: letters,
-							isRevealed
-						});
-					});
-				} else {
-					updateGameState({
-						isHidden,
-						hiddenName: name,
-						nameOptions: options || [],
-						lettersRevealed: letters,
-						isRevealed
-					});
-				}
-				lastIsHidden = isHidden;
-			} else {
-				console.log("[handleDotPlotStateChange] No state change");
-			}
-		}
-	}
-
-	// Track room code changes
-	$effect(() => {
-		console.log("[ROOM CODE CHANGED]", roomCode);
-		console.trace("[ROOM CODE CHANGED] Stack trace");
-	});
 
 	// Reset all players' attempt counts for a new round
 	async function resetAllPlayersAttempts() {
 		if (gameMode === "host" && players.length > 0) {
 			console.log(
-				"[DotPlotMultiplayer] Resetting all players attempt counts for",
+				"[VersusMultiplayer] Resetting all players attempt counts for",
 				players.length,
 				"players"
 			);
@@ -266,10 +184,10 @@
 			const updatePromises = players.map((player) => {
 				const playerRef = ref(
 					database,
-					`rooms/${roomCode}/players/${player.id}`
+					`versus-rooms/${roomCode}/players/${player.id}`
 				);
 				console.log(
-					"[DotPlotMultiplayer] Resetting attemptCount and isCorrect for player:",
+					"[VersusMultiplayer] Resetting attemptCount and isCorrect for player:",
 					player.name
 				);
 				return update(playerRef, {
@@ -278,13 +196,121 @@
 				});
 			});
 			await Promise.all(updatePromises);
-			console.log("[DotPlotMultiplayer] All attempt counts reset");
+			console.log("[VersusMultiplayer] All attempt counts reset");
 		}
 	}
 
+	// Monitor host chart for state changes
+	$effect(() => {
+		if (gameMode === "host" && hostChartElement) {
+			// Use MutationObserver to detect when hide/reveal happens
+			const observer = new MutationObserver(() => {
+				// Check if the chart is in hidden mode by looking for the draggable names
+				const draggableNames =
+					hostChartElement.querySelector(".draggable-names");
+				const isHidden = !!draggableNames;
+
+				console.log(
+					"[VersusMultiplayer] MutationObserver fired - isHidden:",
+					isHidden
+				);
+
+				// Try to get the current names from multiple sources
+				// 1. From the .possible-names element (when hidden)
+				const possibleNames = hostChartElement.querySelector(".possible-names");
+				if (possibleNames) {
+					const text = possibleNames.textContent.trim();
+					const match = text.match(/(.+)\s+vs\.\s+(.+)/);
+					if (match) {
+						lastKnownName1 = match[1].trim();
+						lastKnownName2 = match[2].trim();
+						console.log(
+							"[VersusMultiplayer] Found names from .possible-names:",
+							lastKnownName1,
+							lastKnownName2
+						);
+					}
+				}
+
+				// 2. From the .names-revealed element (when not hidden)
+				if (!isHidden) {
+					const namesRevealed =
+						hostChartElement.querySelector(".names-revealed");
+					if (namesRevealed) {
+						const spans = namesRevealed.querySelectorAll("span");
+						if (spans.length >= 3) {
+							lastKnownName1 = spans[0].textContent.trim();
+							lastKnownName2 = spans[2].textContent.trim();
+							console.log(
+								"[VersusMultiplayer] Found names from .names-revealed:",
+								lastKnownName1,
+								lastKnownName2
+							);
+						}
+					}
+				}
+
+				// Update Firebase if state changed
+				if (
+					gameState &&
+					(gameState.isHidden !== isHidden ||
+						gameState.name1 !== lastKnownName1 ||
+						gameState.name2 !== lastKnownName2)
+				) {
+					console.log("[VersusMultiplayer] Updating Firebase with:", {
+						isHidden,
+						name1: lastKnownName1,
+						name2: lastKnownName2
+					});
+
+					// If transitioning from revealed to hidden (starting new round), reset attempts
+					if (!lastIsHidden && isHidden) {
+						console.log(
+							"[VersusMultiplayer] New round starting, resetting attempts"
+						);
+						// Wait for attempts to be reset before updating game state
+						resetAllPlayersAttempts().then(() => {
+							updateGameState({
+								isHidden,
+								name1: lastKnownName1,
+								name2: lastKnownName2
+							});
+						});
+					} else {
+						updateGameState({
+							isHidden,
+							name1: lastKnownName1,
+							name2: lastKnownName2
+						});
+					}
+					lastIsHidden = isHidden;
+				} else {
+					console.log(
+						"[VersusMultiplayer] No Firebase update needed. Current state:",
+						{
+							isHidden,
+							name1: lastKnownName1,
+							name2: lastKnownName2,
+							gameState
+						}
+					);
+				}
+			});
+
+			observer.observe(hostChartElement, {
+				childList: true,
+				subtree: true,
+				characterData: true
+			});
+
+			return () => observer.disconnect();
+		}
+	});
+
 	// Handle player guess
-	async function submitPlayerGuess(guessedName) {
-		if (!gameState || !gameState.isHidden || !guessedName.trim()) return;
+	async function submitPlayerGuess(guess1, guess2) {
+		if (!gameState || !gameState.isHidden || !guess1.trim() || !guess2.trim())
+			return;
 
 		const currentPlayer = players.find((p) => p.id === playerId);
 		const currentAttemptCount = currentPlayer?.attemptCount || 0;
@@ -303,13 +329,36 @@
 			return;
 		}
 
-		console.log("[Submitting Guess]", guessedName);
+		const g1 = guess1.toLowerCase().trim();
+		const g2 = guess2.toLowerCase().trim();
 
-		const guess = guessedName.toLowerCase().trim();
-		const answer = gameState.hiddenName.toLowerCase().trim();
-		const isCorrect = guess === answer;
+		// Create a unique key for this guess to prevent rapid duplicate submissions
+		const guessKey = `${g1}|${g2}`;
+		if (guessKey === lastSubmittedGuess) {
+			console.log("Duplicate guess detected (same as last), skipping");
+			return;
+		}
+		console.log("[Submitting Guess]", g1, "and", g2);
+		lastSubmittedGuess = guessKey;
 
-		console.log("Guess:", guess, "Answer:", answer, "Correct:", isCorrect);
+		// Clear the duplicate check after a short delay to allow retrying the same guess later
+		setTimeout(() => {
+			if (lastSubmittedGuess === guessKey) {
+				lastSubmittedGuess = "";
+			}
+		}, 1000);
+
+		const name1Lower = gameState.name1.toLowerCase().trim();
+		const name2Lower = gameState.name2.toLowerCase().trim();
+
+		// Order matters - must match name1 to position 1 and name2 to position 2
+		const correct1 = g1 === name1Lower;
+		const correct2 = g2 === name2Lower;
+		const isCorrect = correct1 && correct2;
+
+		console.log("Guess 1:", g1, "Guess 2:", g2);
+		console.log("Name 1:", name1Lower, "Name 2:", name2Lower);
+		console.log("Correct:", isCorrect);
 
 		const currentScore = currentPlayer?.score || 0;
 
@@ -342,9 +391,13 @@
 			newAttemptCount
 		);
 
-		const playerRef = ref(database, `rooms/${roomCode}/players/${playerId}`);
+		const playerRef = ref(
+			database,
+			`versus-rooms/${roomCode}/players/${playerId}`
+		);
 		await update(playerRef, {
-			lastGuess: guessedName,
+			lastGuess1: guess1,
+			lastGuess2: guess2,
 			isCorrect,
 			score: newScore,
 			attemptCount: newAttemptCount,
@@ -359,63 +412,42 @@
 		}, 2000);
 	}
 
-	// Monitor player chart for guesses via the built-in DotPlot component
+	// Monitor player chart for guesses via the built-in Versus component
 	$effect(() => {
 		if (gameMode === "player" && playerChartElement && gameState?.isHidden) {
-			// Listen for form submissions or guess button clicks
-			const guessButton = playerChartElement.querySelector(".submit-btn");
-			const guessInput = playerChartElement.querySelector(
-				".name-input.guess-input"
-			);
-			const optionChips = playerChartElement.querySelectorAll(".option-chip");
+			// Listen for drag-and-drop completion (auto-submit)
+			const dropZones = playerChartElement.querySelectorAll(".chart-drop-zone");
 
-			const listeners = [];
+			// Watch for changes in drop zones to detect when both names are dropped
+			const observer = new MutationObserver(() => {
+				const dropZone1 = playerChartElement.querySelector(
+					".chart-drop-zone:nth-of-type(1) .drop-label"
+				);
+				const dropZone2 = playerChartElement.querySelector(
+					".chart-drop-zone:nth-of-type(2) .drop-label"
+				);
 
-			if (guessButton && guessInput) {
-				const handleGuess = async () => {
-					const guessValue = guessInput.value;
-					if (guessValue.trim()) {
-						await submitPlayerGuess(guessValue);
+				if (dropZone1 && dropZone2) {
+					const guess1 = dropZone1.textContent.trim();
+					const guess2 = dropZone2.textContent.trim();
+
+					// Check if both zones have names (not just arrows)
+					if (guess1 && guess2 && guess1 !== "↓" && guess2 !== "↓") {
+						// Submit after a short delay to allow the auto-submit to process
+						setTimeout(() => {
+							submitPlayerGuess(guess1, guess2);
+						}, 200);
 					}
-				};
+				}
+			});
 
-				guessButton.addEventListener("click", handleGuess);
-				guessInput.addEventListener("keydown", (e) => {
-					if (e.key === "Enter") {
-						handleGuess();
-					}
-				});
+			observer.observe(playerChartElement, {
+				childList: true,
+				subtree: true,
+				characterData: true
+			});
 
-				listeners.push({
-					el: guessButton,
-					event: "click",
-					handler: handleGuess
-				});
-			}
-
-			// Listen for option chip clicks
-			if (optionChips.length > 0) {
-				optionChips.forEach((chip) => {
-					const handleChipClick = async () => {
-						const guessValue = chip.textContent.trim();
-						if (guessValue) {
-							await submitPlayerGuess(guessValue);
-						}
-					};
-					chip.addEventListener("click", handleChipClick);
-					listeners.push({
-						el: chip,
-						event: "click",
-						handler: handleChipClick
-					});
-				});
-			}
-
-			return () => {
-				listeners.forEach(({ el, event, handler }) => {
-					el.removeEventListener(event, handler);
-				});
-			};
+			return () => observer.disconnect();
 		}
 	});
 
@@ -423,7 +455,6 @@
 	let copyButtonText = $state("Copy");
 	async function copyRoomCode() {
 		try {
-			console.log("[copyRoomCode] Copying room code:", roomCode);
 			await navigator.clipboard.writeText(roomCode);
 			copyButtonText = "Copied!";
 			setTimeout(() => {
@@ -434,14 +465,21 @@
 		}
 	}
 
+	// Update URL with room code
+	function updateURL() {
+		if (browser && roomCode) {
+			const url = new URL(window.location.href);
+			url.searchParams.set("room", roomCode);
+			window.history.pushState({}, "", url);
+		}
+	}
+
 	// Get shareable link
 	function getShareableLink() {
 		if (browser && roomCode) {
 			const url = new URL(window.location.href);
 			url.searchParams.set("room", roomCode);
-			const link = url.toString();
-			console.log("[getShareableLink] Room code:", roomCode, "Link:", link);
-			return link;
+			return url.toString();
 		}
 		return "";
 	}
@@ -451,7 +489,6 @@
 	async function copyShareableLink() {
 		try {
 			const link = getShareableLink();
-			console.log("[copyShareableLink] Copying link:", link);
 			await navigator.clipboard.writeText(link);
 			copyLinkText = "Link Copied!";
 			setTimeout(() => {
@@ -473,8 +510,17 @@
 		players = [];
 		copyButtonText = "Copy";
 		copyLinkText = "Copy Link";
+		lastSubmittedGuess = "";
+
+		// Clear URL params
+		if (browser) {
+			const url = new URL(window.location.href);
+			url.searchParams.delete("room");
+			window.history.pushState({}, "", url);
+		}
 	}
 
+	// Check for room code in URL on mount
 	onMount(() => {
 		if (browser) {
 			const urlParams = new URLSearchParams(window.location.search);
@@ -493,7 +539,7 @@
 
 {#if gameMode === "menu"}
 	<div class="multiplayer-menu">
-		<h2>What's That Baby Name?</h2>
+		<h2>Which Name Is Which? — Multiplayer Game</h2>
 
 		<div class="menu-section">
 			<h3>Enter Your Name</h3>
@@ -522,11 +568,7 @@
 		</div>
 
 		<div class="multiplayer-footer">
-			<p>
-				<a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie
-				Walsh.
-				<a href="{base}/#origin-story" target="_blank">Read the backstory.</a>
-			</p>
+			<p><a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie Walsh. <a href="{base}/#origin-story" target="_blank">Read the backstory.</a></p>
 		</div>
 	</div>
 {:else if gameMode === "host"}
@@ -645,29 +687,24 @@
 		</div>
 
 		<div class="game-area" bind:this={hostChartElement}>
-			<DotPlot
-				defaultName="Emma"
+			<Versus
+				defaultName1="Charlotte"
+				defaultName2="Isabella"
 				startHidden={false}
 				showControls={true}
 				startYear={1920}
-				hostMode={true}
-				onStateChange={handleDotPlotStateChange}
 			/>
 		</div>
 
 		<div class="host-controls">
 			<p class="hint">
-				Use the chart controls above to set up the game. When ready, click "Hide
-				Name & Play" to start the round.
+				Use the chart controls above to choose two names. When ready, click "Set
+				Names & Start" to begin the round.
 			</p>
 		</div>
 
 		<div class="multiplayer-footer">
-			<p>
-				<a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie
-				Walsh.
-				<a href="{base}/#origin-story" target="_blank">Read the backstory.</a>
-			</p>
+			<p><a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie Walsh. <a href="{base}/#origin-story" target="_blank">Read the backstory.</a></p>
 		</div>
 	</div>
 {:else if gameMode === "player"}
@@ -747,33 +784,28 @@
 		</div>
 
 		<div class="game-area" bind:this={playerChartElement}>
-			{#if gameState && gameState.hiddenName && (gameState.isHidden || gameState.isRevealed)}
+			{#if gameState && gameState.name1 && gameState.name2 && gameState.isHidden}
 				{@const currentPlayer = players.find((p) => p.id === playerId)}
 
 				{#if currentPlayer}
 					{@const attemptsUsed = currentPlayer.attemptCount || 0}
-					{@const maxAttemptsAllowed = gameState.maxAttempts ?? 3}
+					{@const maxAttemptsAllowed = gameState.maxAttempts ?? 1}
 					{@const hasAttemptsRemaining = attemptsUsed < maxAttemptsAllowed}
 
 					{@const playerGotItRight = currentPlayer.isCorrect}
 					{@const isGameOver = !hasAttemptsRemaining || playerGotItRight}
 
-					<div
-						class="chart-container"
-						class:disabled={isGameOver && gameState.isHidden}
-					>
-						{#key `${gameState.hiddenName}-${gameState.isHidden}-${gameState.lettersRevealed}`}
-							<DotPlot
-								defaultName={gameState.hiddenName || "Emma"}
+					<div class="chart-container" class:disabled={isGameOver}>
+						{#key `${gameState.name1}-${gameState.name2}-${gameState.isHidden}`}
+							<Versus
+								defaultName1={gameState.name1}
+								defaultName2={gameState.name2}
 								startHidden={gameState.isHidden}
-								showControls={true}
-								playerMode={true}
-								externalNameOptions={gameState.nameOptions || []}
-								externalLettersRevealed={gameState.lettersRevealed || 0}
+								showControls={false}
 								startYear={1920}
 							/>
 						{/key}
-						{#if isGameOver && gameState.isHidden}
+						{#if isGameOver}
 							<div class="attempts-overlay">
 								<div class="overlay-message">
 									{#if playerGotItRight}
@@ -787,14 +819,6 @@
 										</p>
 										<p>Waiting for the host to start a new round...</p>
 									{/if}
-								</div>
-							</div>
-						{:else if gameState.isRevealed}
-							<div class="revealed-overlay">
-								<div class="overlay-message">
-									<h3 style="color: #6b46c1;">Answer Revealed!</h3>
-									<p>The answer was <strong>{gameState.hiddenName}</strong></p>
-									<p>Waiting for the host to start a new round...</p>
 								</div>
 							</div>
 						{/if}
@@ -836,11 +860,7 @@
 		</div>
 
 		<div class="multiplayer-footer">
-			<p>
-				<a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie
-				Walsh.
-				<a href="{base}/#origin-story" target="_blank">Read the backstory.</a>
-			</p>
+			<p><a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie Walsh. <a href="{base}/#origin-story" target="_blank">Read the backstory.</a></p>
 		</div>
 	</div>
 {/if}
@@ -882,6 +902,12 @@
 		font-family: "Baloo Bhai 2", sans-serif;
 	}
 
+	.name-input:focus,
+	.room-code-input:focus {
+		outline: none;
+		border-color: #6b46c1;
+	}
+
 	.create-btn,
 	.join-btn {
 		width: 100%;
@@ -901,7 +927,7 @@
 	}
 
 	.create-btn:hover {
-		background: #5a3aa8;
+		background: #5a3a9f;
 	}
 
 	.join-btn {
@@ -913,34 +939,9 @@
 	}
 
 	.game-container {
-		max-width: 1000px;
+		max-width: 900px;
 		margin: 0 auto;
-		padding: 0px;
-	}
-
-	@media (max-width: 768px) {
-		.game-container {
-			max-width: 100%;
-			padding: 0;
-			margin: 0;
-		}
-
-		.multiplayer-menu {
-			max-width: 100%;
-			margin: 0;
-			padding: 20px;
-			border-radius: 0;
-		}
-
-		.game-header,
-		.players-panel,
-		.game-area,
-		.host-controls,
-		.player-status {
-			border-radius: 0;
-			margin-left: 0;
-			margin-right: 0;
-		}
+		padding: 20px;
 	}
 
 	.player-identity {
@@ -965,7 +966,18 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 20px;
-		padding: 20px;
+		padding: 15px;
+		background: #f5f5f5;
+		border-radius: 8px;
+	}
+
+	.game-header h2 {
+		margin: 0;
+		font-size: 20px;
+		color: #333;
+		display: flex;
+		align-items: center;
+		gap: 8px;
 	}
 
 	.room-code {
@@ -980,24 +992,14 @@
 		border: none;
 		cursor: pointer;
 		padding: 4px;
-		margin-left: 8px;
-		opacity: 0.5;
-		transition: all 0.2s;
-		vertical-align: middle;
-		position: relative;
-		top: -2px;
-		color: #6b46c1;
 		display: inline-flex;
 		align-items: center;
+		color: #6b46c1;
+		transition: all 0.2s;
 	}
 
 	.copy-icon:hover {
-		opacity: 1;
-		transform: scale(1.15);
-	}
-
-	.copy-icon svg {
-		display: block;
+		color: #5a3a9f;
 	}
 
 	.header-actions {
@@ -1031,7 +1033,6 @@
 		border-radius: 6px;
 		cursor: pointer;
 		font-family: "Baloo Bhai 2", sans-serif;
-		transition: all 0.2s;
 	}
 
 	.leave-btn:hover {
@@ -1039,14 +1040,11 @@
 	}
 
 	.players-panel {
+		background: white;
+		border: 2px solid #ddd;
+		border-radius: 8px;
 		padding: 15px;
 		margin-bottom: 15px;
-	}
-
-	.players-panel h3 {
-		margin-bottom: 10px;
-		color: #333;
-		font-size: 16px;
 	}
 
 	.game-settings {
@@ -1097,6 +1095,12 @@
 		border-color: #6b46c1;
 	}
 
+	.players-panel h3 {
+		margin: 0 0 10px 0;
+		font-size: 16px;
+		color: #6b46c1;
+	}
+
 	.players-list {
 		list-style: none;
 		padding: 0;
@@ -1125,13 +1129,13 @@
 
 	.player-item {
 		display: flex;
-		justify-content: space-between;
 		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
 		padding: 6px 10px;
 		background: #f5f5f5;
 		border-radius: 4px;
 		margin-bottom: 4px;
-		gap: 8px;
 	}
 
 	.player-name {
@@ -1144,14 +1148,6 @@
 		white-space: nowrap;
 	}
 
-	.player-score {
-		color: #6b46c1;
-		font-weight: 600;
-		font-size: 14px;
-		min-width: 20px;
-		text-align: right;
-	}
-
 	.host-badge {
 		background: #6b46c1;
 		color: white;
@@ -1159,7 +1155,14 @@
 		border-radius: 10px;
 		font-size: 11px;
 		font-weight: 600;
-		text-transform: uppercase;
+	}
+
+	.player-score {
+		color: #6b46c1;
+		font-weight: 600;
+		font-size: 14px;
+		min-width: 20px;
+		text-align: right;
 	}
 
 	.correct-indicator {
@@ -1169,13 +1172,13 @@
 	}
 
 	.guess-display {
-		color: #ff9800;
-		font-size: 14px;
+		color: #999;
+		font-size: 13px;
 		font-style: italic;
 	}
 
 	.game-area {
-		padding: 20px;
+		margin-bottom: 20px;
 	}
 
 	.chart-container {
@@ -1190,8 +1193,7 @@
 		opacity: 0.6;
 	}
 
-	.attempts-overlay,
-	.revealed-overlay {
+	.attempts-overlay {
 		position: absolute;
 		top: 50%;
 		left: 50%;
@@ -1222,19 +1224,17 @@
 		font-size: 14px;
 	}
 
-	.revealed-overlay .overlay-message {
-		border-color: #6b46c1;
-		background: #f9f7fc;
-	}
-
 	.host-controls {
-		margin-top: 20px;
-		padding: 20px;
+		background: #f0e7ff;
+		padding: 15px;
+		border-radius: 8px;
+		text-align: center;
 	}
 
 	.hint {
 		margin: 0;
-		color: #2e7d32;
+		color: #666;
+		font-size: 14px;
 	}
 
 	.multiplayer-footer {
@@ -1261,17 +1261,33 @@
 		text-decoration: underline;
 	}
 
+	.waiting-message {
+		text-align: center;
+		padding: 60px 20px;
+		background: #f5f5f5;
+		border-radius: 8px;
+	}
+
+	.waiting-message h3 {
+		color: #6b46c1;
+		margin-bottom: 12px;
+	}
+
+	.waiting-message p {
+		color: #666;
+	}
+
 	.player-status {
-		margin-top: 20px;
-		padding: 20px;
+		background: #f5f5f5;
+		padding: 15px;
+		border-radius: 8px;
 		text-align: center;
 	}
 
 	.player-status p {
 		margin: 8px 0;
-		font-size: 16px;
 		font-weight: 600;
-		color: #333;
+		font-size: 16px;
 	}
 
 	.result-correct {
@@ -1290,78 +1306,19 @@
 		font-size: 16px;
 	}
 
-	.guess-feedback {
-		margin-top: 12px;
-		padding: 16px 24px;
-		border-radius: 6px;
-		font-size: 18px;
-		font-weight: 600;
-		text-align: center;
-	}
+	@media (max-width: 768px) {
+		.game-header {
+			flex-direction: column;
+			gap: 12px;
+		}
 
-	.guess-feedback.correct {
-		background: #4caf50;
-		color: white;
-	}
+		.game-header h2 {
+			font-size: 16px;
+			flex-direction: column;
+		}
 
-	.guess-feedback.incorrect {
-		background: #f44336;
-		color: white;
-	}
-
-	.name-options-display {
-		margin-top: 20px;
-		padding: 20px;
-	}
-
-	.name-options-display h4 {
-		margin: 0 0 12px 0;
-		color: #333;
-	}
-
-	.options-chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	.option-chip-player {
-		display: inline-block;
-		padding: 6px 12px;
-		background: white;
-		border: 2px solid #ffd700;
-		border-radius: 16px;
-		font-size: 14px;
-		font-weight: 500;
-		color: #333;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.option-chip-player:hover {
-		background: #ffd700;
-		color: #000;
-		transform: scale(1.05);
-	}
-
-	.option-chip-player:active {
-		transform: scale(0.98);
-	}
-
-	.waiting-message {
-		text-align: center;
-		padding: 60px 20px;
-		color: #666;
-	}
-
-	.waiting-message h3 {
-		color: #6b46c1;
-		margin-bottom: 12px;
-		font-size: 24px;
-	}
-
-	.waiting-message p {
-		margin: 0;
-		font-size: 16px;
+		.room-code {
+			font-size: 20px;
+		}
 	}
 </style>

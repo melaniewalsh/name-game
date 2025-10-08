@@ -17,6 +17,9 @@ const config = {
 		adapter: adapterStatic({ strict: false }),
 		paths: {
 			base: process.env.NODE_ENV === 'production' ? '/name-game' : ''
+		},
+		prerender: {
+			handleMissingId: 'ignore'
 		}
 	}
 };

@@ -1,6 +1,6 @@
 <script>
 	import { base } from "$app/paths";
-	import DotPlotMultiplayer from "./DotPlotMultiplayer.svelte";
+	import VersusMultiplayer from "./VersusMultiplayer.svelte";
 
 	let showMultiplayer = $state(true);
 </script>
@@ -18,14 +18,14 @@
 			<div class="multiplayer-header">
 				<p class="multiplayer-description">
 					Want to play with friends in real-time? One person becomes the host,
-					picks a name, and adds optional name choices. Then they share a room
-					code with friends who can join and compete to guess the name first!
+					picks two names, and players compete to guess which name is which by
+					dragging names to the correct lines. Share a room code with friends!
 				</p>
-				<a href="{base}/multiplayer" target="_blank" class="open-tab-btn">
+				<a href="{base}/versus-multiplayer" target="_blank" class="open-tab-btn">
 					Open in New Tab →
 				</a>
 			</div>
-			<DotPlotMultiplayer />
+			<VersusMultiplayer />
 		</div>
 	{/if}
 </div>

@@ -12,6 +12,7 @@
 	import * as d3 from "d3";
 	import confetti from "canvas-confetti";
 	import { base } from "$app/paths";
+	import { toBlob } from "html-to-image";
 
 	// ---- props (change in parent) ----
 	const {
@@ -22,7 +23,10 @@
 		startYear: propStartYear = 1880, // start year for x-axis
 		showControls = true, // show or hide all controls
 		playerMode = false, // if true, only show guess controls (no reveal/reset)
-		externalNameOptions = [] // name options passed from parent (for multiplayer)
+		hostMode = false, // if true, hide guess input (for multiplayer host)
+		externalNameOptions = [], // name options passed from parent (for multiplayer)
+		externalLettersRevealed = 0, // letters revealed passed from parent (for multiplayer)
+		onStateChange = null // callback for when name/hidden state changes (for multiplayer host)
 	} = $props();
 
 	// ---- interactive state ----
@@ -32,6 +36,10 @@
 	let startYear = $state(
 		typeof propStartYear === "string" ? parseInt(propStartYear) : propStartYear
 	);
+
+	// Mobile detection
+	let isMobile = $state(false);
+	let yearSliderStep = $derived(isMobile ? 50 : 10);
 
 	// Reactive margin based on mode
 	let margin = $derived(
@@ -70,13 +78,35 @@
 	// Chart controls visibility
 	let showChartControls = $state(false);
 
+	// Hint system
+	let lettersRevealed = $state(1); // Start with first letter
+	let isRandomPick = $state(false); // Track if name was randomly picked
+	let isRevealed = $state(false); // Track if "Reveal Answer" button was clicked
+
+	// Notify parent of state changes (for multiplayer host)
+	$effect(() => {
+		if (hostMode && onStateChange) {
+			// Only send name when hidden or revealed, otherwise send empty string
+			const nameToSend = (isHidden || isRevealed) ? (isHidden ? hiddenName : name) : "";
+			onStateChange({
+				name: nameToSend,
+				isHidden,
+				nameOptions,
+				lettersRevealed: isRandomPick ? lettersRevealed : 0,
+				isRevealed
+			});
+		}
+	});
+
 	// ---- local state / refs ----
+	let chartWrapper;
 	let container; // div to hold the svg
 	let width = $state(0); // responsive width via bind:clientWidth
 	let all = []; // [{year, name, sex, n}]
 	let yearRange = [1880, 2026]; // inclusive domain (updated after load)
 	let tooltip = $state({ show: false, x: 0, y: 0, year: 0, count: 0, rank: 0 });
 	let uniqueNames = [];
+	let topNames = []; // Top 1000 names by total births
 	let yearTotals = new Map(); // total births per year for proportion calculation
 	let nameRankings = new Map(); // Map of year -> sorted list of {name, count}
 
@@ -126,6 +156,12 @@
 
 	// 1) load & normalize once
 	onMount(async () => {
+		// Detect mobile
+		isMobile = window.innerWidth <= 768;
+		window.addEventListener("resize", () => {
+			isMobile = window.innerWidth <= 768;
+		});
+
 		const rows = await d3.csv(csvUrl, (d) => {
 			const year = +d.year ?? +d.Year ?? +d["\uFEFFyear"] ?? +d["\uFEFFYear"];
 			const name = String(d.name ?? d.Name ?? "").trim();
@@ -146,6 +182,16 @@
 		// Get unique names
 		const nameSet = new Set(all.map((d) => d.name));
 		uniqueNames = Array.from(nameSet).sort();
+
+		// Calculate top 1000 names by total births across all years
+		const nameTotals = new Map();
+		all.forEach((d) => {
+			nameTotals.set(d.name, (nameTotals.get(d.name) || 0) + d.n);
+		});
+		topNames = Array.from(nameTotals.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 1000)
+			.map(([name]) => name);
 
 		// Calculate total births per year and rankings
 		all.forEach((d) => {
@@ -324,13 +370,38 @@
 							.attr("class", "minor-tick");
 					}
 				});
-			});
-		yAxisG.call(
-			d3
-				.axisLeft(y)
-				.ticks(5)
-				.tickFormat((d) => fmt(d, true))
-		);
+			})
+			.selectAll("text")
+			.attr("class", "axis-label")
+			.style(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.style("font-size", "16px")
+			.attr(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.attr("font-size", "16px");
+		yAxisG
+			.call(
+				d3
+					.axisLeft(y)
+					.ticks(5)
+					.tickFormat((d) => fmt(d, true))
+			)
+			.selectAll("text")
+			.attr("class", "axis-label")
+			.style(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.style("font-size", "16px")
+			.attr(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.attr("font-size", "16px");
 		gridG
 			.call(
 				d3
@@ -435,6 +506,10 @@
 	// Handle input changes
 	function handleInput(e) {
 		inputValue = e.target.value;
+		// Clear revealed flag when host starts typing a new name
+		if (hostMode && isRevealed) {
+			isRevealed = false;
+		}
 		if (inputValue.trim().length > 0) {
 			const search = inputValue.toLowerCase();
 			suggestions = uniqueNames
@@ -496,6 +571,20 @@
 		isHidden = true;
 		guessValue = "";
 		showGuessSuccess = false;
+		isRandomPick = false;
+		lettersRevealed = 0;
+		isRevealed = false; // Clear revealed flag when starting a new round
+	}
+
+	function revealMoreLetters() {
+		if (lettersRevealed < hiddenName.length) {
+			lettersRevealed++;
+		}
+	}
+
+	function getHintText() {
+		if (!isRandomPick || lettersRevealed === 0) return "";
+		return hiddenName.substring(0, lettersRevealed).toUpperCase();
 	}
 
 	function revealName() {
@@ -512,7 +601,12 @@
 			});
 		}
 		isHidden = false;
-		hiddenName = "";
+		isRevealed = true; // Mark that reveal was explicitly clicked
+		// In host mode, keep hiddenName so players can see the answer
+		// In regular mode, clear it
+		if (!hostMode) {
+			hiddenName = "";
+		}
 		guessValue = "";
 		inputValue = "";
 		showGuessSuggestions = false;
@@ -523,15 +617,39 @@
 	}
 
 	function resetGame() {
-		isHidden = false;
-		hiddenName = "";
+		// In host mode, reset clears the game without revealing
+		// In regular mode, reset reveals the name
+		if (hostMode) {
+			isHidden = false;
+			hiddenName = "";
+			name = defaultName;
+			inputValue = defaultName;
+		} else {
+			isHidden = false;
+			hiddenName = "";
+			inputValue = "";
+		}
 		guessValue = "";
-		inputValue = "";
 		showGuessSuggestions = false;
 		showSuggestions = false;
 		showGuessSuccess = false;
 		showGuessFeedback = false;
 		isCorrectGuess = false;
+		isRandomPick = false;
+		lettersRevealed = 0;
+		isRevealed = false; // Clear the revealed flag
+	}
+
+	function pickRandomName() {
+		if (topNames.length === 0) return;
+		const randomName = topNames[Math.floor(Math.random() * topNames.length)];
+		name = randomName;
+		inputValue = randomName;
+		hiddenName = randomName;
+		isHidden = true;
+		showSuggestions = false;
+		isRandomPick = true;
+		lettersRevealed = 1;
 	}
 
 	function handleGuessInput(e) {
@@ -739,6 +857,98 @@
 	function removeNameOption(index) {
 		nameOptions = nameOptions.filter((_, i) => i !== index);
 	}
+
+	async function downloadScreenshot() {
+		if (!fullscreenContainer) return;
+
+		try {
+			// Ensure fonts are loaded
+			await document.fonts.ready;
+
+			// Hide elements we don't want in the screenshot
+			const screenshotBtn =
+				fullscreenContainer.querySelector(".screenshot-btn");
+			const controls = fullscreenContainer.querySelector(".controls");
+			const guessOptions = fullscreenContainer.querySelector(".guess-options");
+			const tooltips = fullscreenContainer.querySelectorAll(".tooltip");
+			const wrongMessage = fullscreenContainer.querySelector(".wrong-message");
+			const correctMessage =
+				fullscreenContainer.querySelector(".correct-message");
+			const footer = fullscreenContainer.querySelector(".screenshot-footer");
+
+			if (screenshotBtn) screenshotBtn.style.display = "none";
+			if (controls) controls.style.display = "none";
+			if (guessOptions) guessOptions.style.display = "none";
+			tooltips.forEach((t) => (t.style.display = "none"));
+			if (wrongMessage) wrongMessage.style.display = "none";
+			if (correctMessage) correctMessage.style.display = "none";
+
+			// Show footer for screenshot
+			if (footer) footer.style.display = "block";
+
+			// Add padding for screenshot
+			const originalPadding = fullscreenContainer.style.padding;
+			fullscreenContainer.style.padding = "40px";
+
+			// Explicitly force fonts on all elements
+			const titleElements =
+				fullscreenContainer.querySelectorAll(".chart-title");
+			titleElements.forEach((el) => {
+				el.style.fontFamily =
+					'"Bowlby One SC", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif';
+			});
+
+			const axisElements = fullscreenContainer.querySelectorAll("text");
+			axisElements.forEach((el) => {
+				el.style.fontFamily =
+					'"Baloo Bhai 2", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif';
+				el.setAttribute(
+					"font-family",
+					"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+				);
+			});
+
+			const footerElements =
+				fullscreenContainer.querySelectorAll(".footer-text");
+			footerElements.forEach((el) => {
+				el.style.fontFamily =
+					'"Baloo Bhai 2", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif';
+			});
+
+			// Small delay to ensure rendering is complete
+			await new Promise((resolve) => setTimeout(resolve, 300));
+
+			const blob = await toBlob(fullscreenContainer, {
+				backgroundColor: "#ffffff",
+				pixelRatio: 2,
+				cacheBust: true,
+				skipFonts: false,
+				style: {
+					"font-family":
+						'"Baloo Bhai 2", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif'
+				}
+			});
+
+			// Restore original styles
+			if (screenshotBtn) screenshotBtn.style.display = "";
+			if (controls) controls.style.display = "";
+			if (guessOptions) guessOptions.style.display = "";
+			tooltips.forEach((t) => (t.style.display = ""));
+			if (wrongMessage) wrongMessage.style.display = "";
+			if (correctMessage) correctMessage.style.display = "";
+			if (footer) footer.style.display = "";
+			fullscreenContainer.style.padding = originalPadding;
+
+			const link = document.createElement("a");
+			const chartName = isHidden ? "mystery-name" : name;
+			link.download = `${chartName}-baby-name-trend-chart.png`;
+			link.href = URL.createObjectURL(blob);
+			link.click();
+			setTimeout(() => URL.revokeObjectURL(link.href), 100);
+		} catch (error) {
+			console.error("Failed to capture screenshot:", error);
+		}
+	}
 </script>
 
 <div class="fullscreen-wrapper" bind:this={fullscreenContainer}>
@@ -746,15 +956,43 @@
 		<div class="celebration">🎉</div>
 	{/if}
 
-	<!-- title -->
-	<h2 class="chart-title">Guess this name: {isHidden ? "???" : name}</h2>
+	<div class="chart-header" bind:this={chartWrapper}>
+		<!-- title -->
+		<h2 class="chart-title">Guess this name: {isHidden ? "???" : name}</h2>
+
+		<!-- Camera button (hidden in player/host mode) -->
+		{#if !playerMode && !hostMode}
+		<button
+			class="screenshot-btn"
+			onclick={downloadScreenshot}
+			title="Download screenshot"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path
+					d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+				></path>
+				<circle cx="12" cy="13" r="4"></circle>
+			</svg>
+		</button>
+		{/if}
+	</div>
 
 	<!-- Display name options when hidden -->
 	{#if isHidden && (playerMode ? externalNameOptions.length > 0 : nameOptions.length > 0)}
 		<div class="guess-options">
 			<strong>Choose from:</strong>
 			<div class="options-display">
-				{#each (playerMode ? externalNameOptions : nameOptions) as option, i}
+				{#each playerMode ? externalNameOptions : nameOptions as option, i}
 					<button
 						class="option-chip"
 						onclick={() => {
@@ -762,7 +1000,9 @@
 							submitGuess();
 						}}>{option}</button
 					>
-					{#if i < (playerMode ? externalNameOptions : nameOptions).length - 1}<span class="separator">•</span>{/if}
+					{#if i < (playerMode ? externalNameOptions : nameOptions).length - 1}<span
+							class="separator">•</span
+						>{/if}
 				{/each}
 			</div>
 		</div>
@@ -781,6 +1021,14 @@
 			bind:this={container}
 			bind:clientWidth={width}
 		></div>
+
+		<!-- Footer for screenshots -->
+		<div class="screenshot-footer">
+			<div class="footer-text">
+				Data: U.S. Social Security Administration | Chart: What's That Baby
+				Name?
+			</div>
+		</div>
 
 		<!-- tooltip -->
 		{#if tooltip.show}
@@ -822,7 +1070,7 @@
 					type="range"
 					min="1880"
 					max="2010"
-					step="10"
+					step={yearSliderStep}
 					bind:value={startYear}
 					class="slider"
 				/>
@@ -833,14 +1081,25 @@
 				class:search-mode={!isHidden}
 			>
 				{#if isHidden}
-					<strong>GUESS MODE</strong>
+					{@const effectiveLettersRevealed = playerMode ? externalLettersRevealed : lettersRevealed}
+					{@const showHint = (playerMode && externalLettersRevealed > 0) || (isRandomPick && lettersRevealed > 0)}
+					{#if showHint}
+						<strong>GUESS MODE - NAME STARTS WITH "{playerMode ? hiddenName.substring(0, externalLettersRevealed).toUpperCase() : getHintText()}"</strong>
+						{#if !playerMode && lettersRevealed < hiddenName.length}
+							<button class="hint-btn" onclick={revealMoreLetters}
+								>+ More Letters</button
+							>
+						{/if}
+					{:else}
+						<strong>GUESS MODE</strong>
+					{/if}
 				{:else}
 					<strong>SEARCH MODE FOR {name.toUpperCase()}</strong>
 				{/if}
 			</div>
 
-			<!-- Search/Guess input row -->
-			<div class="row-controls input-row">
+			<!-- Search/Guess input row with action button -->
+			<div class="row-controls input-row search-and-action">
 				{#if !isHidden && !playerMode}
 					<div class="autocomplete">
 						<input
@@ -865,7 +1124,13 @@
 							</ul>
 						{/if}
 					</div>
-				{:else}
+					<button class="hide-btn" onclick={hideNameForGuessing}
+						>Hide Name & Play</button
+					>
+					<button class="random-btn" onclick={pickRandomName}
+						>Random Name</button
+					>
+				{:else if !hostMode}
 					<div class="autocomplete">
 						<input
 							type="text"
@@ -889,151 +1154,194 @@
 							</ul>
 						{/if}
 					</div>
-				{/if}
-			</div>
-
-			<!-- Action buttons row -->
-			<div class="row-controls buttons-row">
-				{#if !isHidden && !playerMode}
-					<button class="hide-btn" onclick={hideNameForGuessing}
-						>Hide Name & Play</button
-					>
-				{:else if isHidden}
 					<button class="submit-btn" onclick={submitGuess}>Guess Name</button>
 				{/if}
 			</div>
 
 			<!-- Optional name choices for guessing -->
 			{#if !playerMode}
-				<div class="row-controls input-row">
-					<div class="name-options-section">
-					<button
-						class="toggle-options-btn"
-						onclick={() => (showAddOptions = !showAddOptions)}
-					>
-						{showAddOptions ? "−" : "+"} Add Name Options {nameOptions.length >
-						0
-							? `(${nameOptions.length})`
-							: ""}
-					</button>
+				<!-- Settings row: Name Options + Chart Controls side-by-side -->
+				<div class="settings-row" class:host-mode={hostMode}>
+					<div class="name-options-section" class:host-mode={hostMode}>
+						<button
+							class="toggle-options-btn"
+							onclick={() => (showAddOptions = !showAddOptions)}
+						>
+							{showAddOptions ? "−" : "+"} Add Name Options {nameOptions.length >
+							0
+								? `(${nameOptions.length})`
+								: ""}
+						</button>
 
-					{#if showAddOptions}
-						<div class="add-options-container">
-							<div class="add-option-input">
-								<input
-									type="text"
-									bind:value={newOptionInput}
-									placeholder="Enter a name option..."
-									onkeydown={(e) => e.key === "Enter" && addNameOption()}
-									maxlength="50"
-								/>
-								<button
-									onclick={addNameOption}
-									disabled={nameOptions.length >= 6 || !newOptionInput.trim()}
-								>
-									Add
-								</button>
-							</div>
-							{#if nameOptions.length > 0}
-								<div class="options-list">
-									{#each nameOptions as option, i}
-										<div class="option-tag">
-											{option}
-											<button
-												class="remove-option"
-												onclick={() => removeNameOption(i)}>×</button
-											>
-										</div>
-									{/each}
-								</div>
-							{/if}
-							{#if nameOptions.length >= 6}
-								<div class="max-options-note">Maximum 6 options</div>
-							{/if}
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			<!-- Chart controls accordion -->
-			<div class="row-controls input-row">
-				<div class="chart-controls-section">
-					<button
-						class="toggle-chart-controls-btn"
-						onclick={() => (showChartControls = !showChartControls)}
-					>
-						{showChartControls ? "−" : "+"} Chart Controls
-					</button>
-
-					{#if showChartControls}
-						<div class="chart-controls-container">
-							<div class="row-controls chart-controls-row">
-								<div class="sex-buttons">
+						{#if showAddOptions}
+							<div class="add-options-container">
+								<div class="add-option-input">
+									<input
+										type="text"
+										bind:value={newOptionInput}
+										placeholder="Enter a name option..."
+										onkeydown={(e) => e.key === "Enter" && addNameOption()}
+										maxlength="50"
+									/>
 									<button
-										class:active={sex === "All"}
-										onclick={() => (sex = "All")}
+										onclick={addNameOption}
+										disabled={nameOptions.length >= 6 || !newOptionInput.trim()}
 									>
-										All
-									</button>
-									<button
-										class:active={sex === "F"}
-										onclick={() => (sex = "F")}
-									>
-										Female
-									</button>
-									<button
-										class:active={sex === "M"}
-										onclick={() => (sex = "M")}
-									>
-										Male
+										Add
 									</button>
 								</div>
-								<span class="pipe-separator">|</span>
-								<div class="mode-buttons">
-									<button
-										class:active={mode === "raw"}
-										onclick={() => (mode = "raw")}
-									>
-										Raw
-									</button>
-									<button
-										class:active={mode === "proportion"}
-										onclick={() => (mode = "proportion")}
-									>
-										Proportion
+								{#if nameOptions.length > 0}
+									<div class="options-list">
+										{#each nameOptions as option, i}
+											<div class="option-tag">
+												{option}
+												<button
+													class="remove-option"
+													onclick={() => removeNameOption(i)}>×</button
+												>
+											</div>
+										{/each}
+									</div>
+								{/if}
+								{#if nameOptions.length >= 6}
+									<div class="max-options-note">Maximum 6 options</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
+
+					<div class="chart-controls-section" class:host-mode={hostMode}>
+						<button
+							class="toggle-chart-controls-btn"
+							onclick={() => (showChartControls = !showChartControls)}
+						>
+							{showChartControls ? "−" : "+"} Chart Controls
+						</button>
+
+						{#if showChartControls}
+							<div class="chart-controls-container">
+								<div class="row-controls chart-controls-row">
+									<div class="sex-buttons">
+										<button
+											class:active={sex === "All"}
+											onclick={() => (sex = "All")}
+										>
+											All
+										</button>
+										<button
+											class:active={sex === "F"}
+											onclick={() => (sex = "F")}
+										>
+											Female
+										</button>
+										<button
+											class:active={sex === "M"}
+											onclick={() => (sex = "M")}
+										>
+											Male
+										</button>
+									</div>
+									<span class="pipe-separator">|</span>
+									<div class="mode-buttons">
+										<button
+											class:active={mode === "raw"}
+											onclick={() => (mode = "raw")}
+										>
+											Raw
+										</button>
+										<button
+											class:active={mode === "proportion"}
+											onclick={() => (mode = "proportion")}
+										>
+											Proportion
+										</button>
+									</div>
+								</div>
+								<div class="row-controls fullscreen-row">
+									<button class="fullscreen-btn" onclick={toggleFullscreen}>
+										{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
 									</button>
 								</div>
 							</div>
-							<div class="row-controls fullscreen-row">
-								<button class="fullscreen-btn" onclick={toggleFullscreen}>
-									{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-								</button>
-							</div>
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			<!-- Reveal and Reset buttons (only in guess mode) -->
-			{#if isHidden && !playerMode}
-				<div class="row-controls buttons-row">
-					<div class="reveal-reset-group">
-						<button class="reveal-btn" onclick={revealName}>Reveal Answer</button>
-						<button class="reset-btn" onclick={resetGame}>Reset</button>
+						{/if}
 					</div>
 				</div>
-			{/if}
+
+				<!-- Reveal and Reset buttons (only in guess mode) -->
+				{#if isHidden && !playerMode}
+					<div class="row-controls buttons-row" class:host-mode={hostMode}>
+						<div class="reveal-reset-group" class:host-mode={hostMode}>
+							<button class="reveal-btn" onclick={revealName}
+								>Reveal Answer</button
+							>
+							<button class="reset-btn" onclick={resetGame}>Reset</button>
+						</div>
+					</div>
+				{/if}
 			{/if}
 		</div>
 	{/if}
 </div>
 
 <style>
+	.chart-header {
+		position: relative;
+	}
+
 	.chart-title {
-		font-size: 48px;
-		font-weight: 700;
 		color: #6b46c1;
-		margin: 0 0 20px 0;
+	}
+
+	.screenshot-btn {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		background: rgba(255, 255, 255, 0.9);
+		border: 2px solid #6b46c1;
+		border-radius: 6px;
+		padding: 8px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s;
+		color: #6b46c1;
+		z-index: 10;
+	}
+
+	.screenshot-btn:hover {
+		background: #6b46c1;
+		color: white;
+	}
+
+	.screenshot-footer {
+		display: none;
+		margin-top: 20px;
+		padding-top: 12px;
+		text-align: center;
+	}
+
+	.footer-text {
+		font-family:
+			"Baloo Bhai 2",
+			-apple-system,
+			BlinkMacSystemFont,
+			Helvetica,
+			Arial,
+			sans-serif;
+		font-size: 14px;
+		color: #666;
+	}
+
+	:global(.axis-label) {
+		font-family:
+			"Baloo Bhai 2",
+			-apple-system,
+			BlinkMacSystemFont,
+			Helvetica,
+			Arial,
+			sans-serif;
+		font-size: 16px;
 	}
 
 	.wrapper {
@@ -1056,6 +1364,10 @@
 		margin-bottom: 8px;
 		font-size: 14px;
 		transition: color 0.3s ease;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		align-items: center;
 	}
 
 	.mode-indicator.search-mode {
@@ -1070,17 +1382,72 @@
 		color: inherit;
 	}
 
+	.hint-btn {
+		padding: 6px 12px;
+		font-size: 13px;
+		font-weight: 600;
+		background: #ff9800;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.hint-btn:hover {
+		background: #f57c00;
+		transform: translateY(-1px);
+	}
+
 	.row-controls {
 		display: flex;
 		gap: 12px;
 		align-items: center;
 	}
 
+	.search-and-action {
+		display: flex;
+		flex-direction: row;
+		gap: 12px;
+		align-items: stretch;
+		width: 100%;
+	}
+
+	.settings-row {
+		display: flex;
+		flex-direction: row;
+		gap: 16px;
+		width: 100%;
+	}
+
+	@media (max-width: 768px) {
+		.search-and-action {
+			flex-direction: column;
+			align-items: center;
+		}
+
+		.search-and-action .autocomplete {
+			max-width: 100%;
+			width: 100%;
+		}
+
+		.hide-btn,
+		.submit-btn,
+		.random-btn {
+			width: 100%;
+			max-width: 500px;
+		}
+
+		.settings-row {
+			flex-direction: column;
+			gap: 12px;
+		}
+	}
+
 	.autocomplete {
 		position: relative;
 		flex: 1;
-		max-width: 500px;
-		margin: 0 auto;
+		min-width: 0;
 	}
 
 	.name-input {
@@ -1205,12 +1572,30 @@
 		border-radius: 6px;
 		cursor: pointer;
 		transition: all 0.2s;
-		width: 100%;
-		max-width: 250px;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 
 	.hide-btn:hover {
 		background: #ff5252;
+	}
+
+	.random-btn {
+		padding: 12px 20px;
+		font-size: 16px;
+		font-weight: 600;
+		background: #4caf50;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 0.2s;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.random-btn:hover {
+		background: #45a049;
 	}
 
 	.submit-btn {
@@ -1224,8 +1609,8 @@
 		border-radius: 6px;
 		cursor: pointer;
 		transition: all 0.2s;
-		width: 100%;
-		max-width: 250px;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 
 	/* .submit-btn:hover {
@@ -1246,6 +1631,12 @@
 		max-width: 250px;
 	}
 
+	.reveal-reset-group.host-mode .reveal-btn {
+		max-width: none;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
 	.reveal-btn:hover {
 		background: #f57c00;
 	}
@@ -1262,6 +1653,12 @@
 		transition: all 0.2s;
 		width: 100%;
 		max-width: 250px;
+	}
+
+	.reveal-reset-group.host-mode .reset-btn {
+		max-width: none;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 
 	.reset-btn:hover {
@@ -1436,11 +1833,24 @@
 		align-items: center;
 	}
 
+	.buttons-row.host-mode {
+		align-items: stretch;
+	}
+
 	.reveal-reset-group {
 		display: flex;
-		gap: 12px;
+		gap: 16px;
 		width: 100%;
-		max-width: 250px;
+		max-width: 900px;
+	}
+
+	.reveal-reset-group.host-mode {
+		max-width: none;
+		gap: 12px; /* Match the search-and-action gap */
+	}
+
+	.reveal-reset-group button {
+		flex: 1;
 	}
 
 	.chart-controls-row {
@@ -1608,13 +2018,38 @@
 		.buttons-row .mode-buttons {
 			width: 100%;
 		}
+
+		/* Make all containers full-width on mobile */
+		.autocomplete,
+		.hide-btn,
+		.submit-btn,
+		.reveal-btn,
+		.reset-btn,
+		.reveal-reset-group,
+		.name-options-section,
+		.chart-controls-section {
+			max-width: 100% !important;
+		}
+
+		.chart-container {
+			margin: 0;
+			padding: 0;
+		}
+
+		.controls {
+			padding: 10px;
+		}
 	}
 
 	/* Name options styling */
 	.name-options-section {
+		width: 475px;
+		flex-shrink: 0;
+	}
+
+	.name-options-section.host-mode {
+		width: auto;
 		flex: 1;
-		max-width: 250px;
-		margin: 0 auto;
 	}
 
 	.toggle-options-btn {
@@ -1784,8 +2219,6 @@
 	/* Chart controls accordion */
 	.chart-controls-section {
 		flex: 1;
-		max-width: 250px;
-		margin: 0 auto;
 	}
 
 	.toggle-chart-controls-btn {

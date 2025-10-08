@@ -11,6 +11,7 @@
 	import { onMount } from "svelte";
 	import * as d3 from "d3";
 	import { base } from "$app/paths";
+	import { toBlob } from "html-to-image";
 
 	// ---- props (change in parent) ----
 	const {
@@ -24,7 +25,9 @@
 	let name = $state(defaultName); // one name to plot (F+M total or single sex)
 	let sex = $state("All"); // 'All' | 'F' | 'M'
 	let mode = $state("raw"); // 'raw' | 'proportion'
-	let startYear = $state(typeof propStartYear === 'string' ? parseInt(propStartYear) : propStartYear);
+	let startYear = $state(
+		typeof propStartYear === "string" ? parseInt(propStartYear) : propStartYear
+	);
 
 	// Reactive margin based on mode
 	let margin = $derived(
@@ -36,6 +39,8 @@
 	let showSuggestions = $state(false);
 	let suggestions = $state([]);
 	let selectedIndex = $state(-1);
+	let showChartControls = $state(false);
+	let chartWrapper;
 
 	// ---- local state / refs ----
 	let container; // div to hold the svg
@@ -285,13 +290,38 @@
 							.attr("class", "minor-tick");
 					}
 				});
-			});
-		yAxisG.call(
-			d3
-				.axisLeft(y)
-				.ticks(5)
-				.tickFormat((d) => fmt(d, true))
-		);
+			})
+			.selectAll("text")
+			.attr("class", "axis-label")
+			.style(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.style("font-size", "16px")
+			.attr(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.attr("font-size", "16px");
+		yAxisG
+			.call(
+				d3
+					.axisLeft(y)
+					.ticks(5)
+					.tickFormat((d) => fmt(d, true))
+			)
+			.selectAll("text")
+			.attr("class", "axis-label")
+			.style(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.style("font-size", "16px")
+			.attr(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.attr("font-size", "16px");
 		gridG
 			.call(
 				d3
@@ -378,7 +408,10 @@
 						x: event.clientX,
 						y: event.clientY,
 						year: dataPoint.date.getFullYear(),
-						count: mode === "proportion" ? dataPoint.count : (dataPoint.rawCount || dataPoint.count),
+						count:
+							mode === "proportion"
+								? dataPoint.count
+								: dataPoint.rawCount || dataPoint.count,
 						rank: rank
 					};
 				}
@@ -448,6 +481,83 @@
 		}, 200);
 	}
 
+	async function downloadScreenshot() {
+		if (!chartWrapper) return;
+
+		try {
+			// Ensure fonts are loaded
+			await document.fonts.ready;
+
+			// Hide elements we don't want in the screenshot
+			const screenshotBtn = chartWrapper.querySelector(".screenshot-btn");
+			const controls = chartWrapper.querySelector(".controls");
+			const tooltips = chartWrapper.querySelectorAll(".tooltip");
+			const footer = chartWrapper.querySelector(".screenshot-footer");
+
+			if (screenshotBtn) screenshotBtn.style.display = "none";
+			if (controls) controls.style.display = "none";
+			tooltips.forEach((t) => (t.style.display = "none"));
+
+			// Show footer for screenshot
+			if (footer) footer.style.display = "block";
+
+			// Add padding for screenshot
+			const originalPadding = chartWrapper.style.padding;
+			chartWrapper.style.padding = "40px";
+
+			// Explicitly force fonts on all elements
+			const titleElements = chartWrapper.querySelectorAll(".chart-title");
+			titleElements.forEach((el) => {
+				el.style.fontFamily =
+					'"Bowlby One SC", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif';
+			});
+
+			const axisElements = chartWrapper.querySelectorAll("text");
+			axisElements.forEach((el) => {
+				el.style.fontFamily =
+					'"Baloo Bhai 2", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif';
+				el.setAttribute(
+					"font-family",
+					"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+				);
+			});
+
+			const footerElements = chartWrapper.querySelectorAll(".footer-text");
+			footerElements.forEach((el) => {
+				el.style.fontFamily =
+					'"Baloo Bhai 2", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif';
+			});
+
+			// Small delay to ensure rendering is complete
+			await new Promise((resolve) => setTimeout(resolve, 300));
+
+			const blob = await toBlob(chartWrapper, {
+				backgroundColor: "#ffffff",
+				pixelRatio: 2,
+				cacheBust: true,
+				skipFonts: false,
+				style: {
+					"font-family":
+						'"Baloo Bhai 2", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif'
+				}
+			});
+
+			// Restore original styles
+			if (screenshotBtn) screenshotBtn.style.display = "";
+			if (controls) controls.style.display = "";
+			tooltips.forEach((t) => (t.style.display = ""));
+			if (footer) footer.style.display = "";
+			chartWrapper.style.padding = originalPadding;
+
+			const link = document.createElement("a");
+			link.download = `${name}-baby-name-trend-chart.png`;
+			link.href = URL.createObjectURL(blob);
+			link.click();
+			setTimeout(() => URL.revokeObjectURL(link.href), 100);
+		} catch (error) {
+			console.error("Failed to capture screenshot:", error);
+		}
+	}
 
 	// re-render on resize or prop changes
 	$effect(() => {
@@ -458,12 +568,35 @@
 		startYear; // track dependencies
 		if (all.length) render();
 	});
-
 </script>
 
-<div class="wrapper-simple">
+<div class="wrapper-simple" bind:this={chartWrapper}>
 	<!-- title -->
-	<h2 class="chart-title">{name}</h2>
+	<h2 class="chart-title">Babies Named "{name}"</h2>
+
+	<!-- Camera button -->
+	<button
+		class="screenshot-btn"
+		onclick={downloadScreenshot}
+		title="Download screenshot"
+	>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="20"
+			height="20"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
+			<path
+				d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+			></path>
+			<circle cx="12" cy="13" r="4"></circle>
+		</svg>
+	</button>
 
 	<div class="wrapper">
 		<!-- container provides responsive width -->
@@ -472,6 +605,13 @@
 			bind:this={container}
 			bind:clientWidth={width}
 		></div>
+
+		<!-- Footer for screenshots -->
+		<div class="screenshot-footer">
+			<div class="footer-text">
+				Data: U.S. Social Security Administration | What's That Baby Name?
+			</div>
+		</div>
 
 		<!-- tooltip -->
 		{#if tooltip.show}
@@ -514,8 +654,8 @@
 			/>
 		</div>
 
-		<!-- Search input row -->
-		<div class="row-controls input-row">
+		<!-- Search input and chart controls row -->
+		<div class="row-controls input-row search-and-controls">
 			<div class="autocomplete">
 				<input
 					type="text"
@@ -539,44 +679,125 @@
 					</ul>
 				{/if}
 			</div>
-		</div>
 
-		<!-- Chart controls row -->
-		<div class="chart-controls-label">CHART CONTROLS</div>
-		<div class="row-controls chart-controls-row">
-			<div class="sex-buttons">
-				<button class:active={sex === "All"} onclick={() => (sex = "All")}>
-					All
-				</button>
-				<button class:active={sex === "F"} onclick={() => (sex = "F")}>
-					Female
-				</button>
-				<button class:active={sex === "M"} onclick={() => (sex = "M")}>
-					Male
-				</button>
-			</div>
-			<span class="pipe-separator">|</span>
-			<div class="mode-buttons">
-				<button class:active={mode === "raw"} onclick={() => (mode = "raw")}>
-					Raw
-				</button>
+			<div class="chart-controls-section">
 				<button
-					class:active={mode === "proportion"}
-					onclick={() => (mode = "proportion")}
+					class="toggle-chart-controls-btn"
+					onclick={() => (showChartControls = !showChartControls)}
 				>
-					Proportion
+					{showChartControls ? "−" : "+"} Chart Controls
 				</button>
+
+				{#if showChartControls}
+					<div class="chart-controls-container">
+						<div class="row-controls chart-controls-row">
+							<div class="sex-buttons">
+								<button
+									class:active={sex === "All"}
+									onclick={() => (sex = "All")}
+								>
+									All
+								</button>
+								<button class:active={sex === "F"} onclick={() => (sex = "F")}>
+									Female
+								</button>
+								<button class:active={sex === "M"} onclick={() => (sex = "M")}>
+									Male
+								</button>
+							</div>
+							<span class="pipe-separator">|</span>
+							<div class="mode-buttons">
+								<button
+									class:active={mode === "raw"}
+									onclick={() => (mode = "raw")}
+								>
+									Raw
+								</button>
+								<button
+									class:active={mode === "proportion"}
+									onclick={() => (mode = "proportion")}
+								>
+									Proportion
+								</button>
+							</div>
+						</div>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>
 </div>
 
 <style>
+	.wrapper-simple {
+		position: relative;
+	}
+
 	.chart-title {
-		font-size: 48px;
-		font-weight: 700;
-		color: #6B46C1;
-		margin: 0 0 20px 0;
+		color: #6b46c1;
+	}
+
+	.screenshot-btn {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		background: rgba(255, 255, 255, 0.9);
+		border: 2px solid #6b46c1;
+		border-radius: 6px;
+		padding: 8px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s;
+		color: #6b46c1;
+		z-index: 10;
+	}
+
+	.screenshot-btn:hover {
+		background: #6b46c1;
+		color: white;
+	}
+
+	.screenshot-footer {
+		display: none;
+		margin-top: 20px;
+		padding-top: 12px;
+		text-align: center;
+	}
+
+	.footer-text {
+		font-family:
+			"Baloo Bhai 2",
+			-apple-system,
+			BlinkMacSystemFont,
+			Helvetica,
+			Arial,
+			sans-serif;
+		font-size: 14px;
+		color: #666;
+	}
+
+	:global(.axis-label) {
+		font-family:
+			"Baloo Bhai 2",
+			-apple-system,
+			BlinkMacSystemFont,
+			Helvetica,
+			Arial,
+			sans-serif;
+		font-size: 16px;
+	}
+
+	.axis-label {
+		font-family:
+			"Baloo Bhai 2",
+			-apple-system,
+			BlinkMacSystemFont,
+			Helvetica,
+			Arial,
+			sans-serif;
+		font-size: 16px;
 	}
 
 	.wrapper {
@@ -633,13 +854,15 @@
 		border: 2px solid #ddd;
 		border-radius: 6px;
 		outline: none;
-		transition: background 0.3s ease, border-color 0.3s ease;
+		transition:
+			background 0.3s ease,
+			border-color 0.3s ease;
 		box-sizing: border-box;
 	}
 
 	.name-input.search-input {
 		background: #e8d4f8;
-		border-color: #6B46C1;
+		border-color: #6b46c1;
 	}
 
 	.name-input.search-input:focus {
@@ -649,7 +872,7 @@
 
 	.name-input.guess-input {
 		background: #ffd4e5;
-		border-color: #E85D75;
+		border-color: #e85d75;
 	}
 
 	.name-input.guess-input:focus {
@@ -658,7 +881,7 @@
 	}
 
 	.name-input:focus {
-		border-color: #6B46C1;
+		border-color: #6b46c1;
 	}
 
 	.suggestions {
@@ -667,7 +890,7 @@
 		left: 0;
 		right: 0;
 		background: white;
-		border: 2px solid #6B46C1;
+		border: 2px solid #6b46c1;
 		border-top: none;
 		border-radius: 0 0 6px 6px;
 		list-style: none;
@@ -723,15 +946,15 @@
 
 	.sex-buttons button:hover,
 	.mode-buttons button:hover {
-		border-color: #6B46C1;
-		background: #F3EFFF;
+		border-color: #6b46c1;
+		background: #f3efff;
 	}
 
 	.sex-buttons button.active,
 	.mode-buttons button.active {
-		background: #6B46C1;
+		background: #6b46c1;
 		color: white;
-		border-color: #6B46C1;
+		border-color: #6b46c1;
 	}
 
 	.hide-btn {
@@ -755,7 +978,7 @@
 		padding: 12px 20px;
 		font-size: 16px;
 		font-weight: 600;
-		background: #6B46C1;
+		background: #6b46c1;
 		color: white;
 		border: none;
 		border-radius: 6px;
@@ -765,7 +988,7 @@
 	}
 
 	.submit-btn:hover {
-		background: #5A3AA8;
+		background: #5a3aa8;
 	}
 
 	.reveal-btn {
@@ -856,7 +1079,7 @@
 		width: 20px;
 		height: 20px;
 		border-radius: 50%;
-		background: #6B46C1;
+		background: #6b46c1;
 		cursor: pointer;
 	}
 
@@ -864,7 +1087,7 @@
 		width: 20px;
 		height: 20px;
 		border-radius: 50%;
-		background: #6B46C1;
+		background: #6b46c1;
 		cursor: pointer;
 		border: none;
 	}
@@ -947,6 +1170,23 @@
 		justify-content: center;
 	}
 
+	.search-and-controls {
+		display: flex;
+		flex-direction: row;
+		gap: 12px;
+		align-items: flex-start;
+	}
+
+	@media (max-width: 768px) {
+		.search-and-controls {
+			flex-direction: column;
+		}
+
+		.chart-controls-section {
+			max-width: 100% !important;
+		}
+	}
+
 	.buttons-row {
 		justify-content: center;
 		flex-direction: column;
@@ -985,8 +1225,40 @@
 		letter-spacing: 0.5px;
 	}
 
+	.chart-controls-section {
+		flex: 1;
+		max-width: 250px;
+		margin: 0 auto;
+	}
+
+	.toggle-chart-controls-btn {
+		width: 100%;
+		padding: 8px 16px;
+		font-size: 14px;
+		font-weight: 500;
+		background: #6b46c1;
+		color: white;
+		border: 2px solid #6b46c1;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 0.2s;
+		text-align: left;
+	}
+
+	.toggle-chart-controls-btn:hover {
+		background: white;
+		color: #6b46c1;
+	}
+
+	.chart-controls-container {
+		margin-top: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
 	.fullscreen-wrapper:fullscreen {
-		background: #E6D5F5;
+		background: #e6d5f5;
 		padding: 40px;
 		overflow-y: auto;
 		display: flex;
@@ -1022,7 +1294,7 @@
 		padding: 4px 8px;
 		font-size: 11px;
 		font-weight: 500;
-		background: #6B46C1;
+		background: #6b46c1;
 		color: white;
 		border: none;
 		border-radius: 4px;
@@ -1034,7 +1306,7 @@
 	}
 
 	.fullscreen-btn:hover {
-		background: #5A3AA8;
+		background: #5a3aa8;
 	}
 
 	.celebration {
@@ -1049,7 +1321,8 @@
 	}
 
 	@keyframes celebrate {
-		0%, 100% {
+		0%,
+		100% {
 			transform: translate(-50%, -50%) scale(1);
 		}
 		50% {

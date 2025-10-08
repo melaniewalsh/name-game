@@ -27,6 +27,13 @@
 	let correct1 = $state(false);
 	let correct2 = $state(false);
 	let showFeedback = $state(false);
+	let showCorrectMessage = $state(false);
+	let showWrongMessage = $state(false);
+	let draggedName = $state(null);
+	let dropZone1Highlight = $state(false);
+	let dropZone2Highlight = $state(false);
+	let dropZone1Position = $state({ top: "20%", left: "60%" });
+	let dropZone2Position = $state({ top: "60%", left: "60%" });
 	let startYear = $state(
 		typeof propStartYear === "string" ? parseInt(propStartYear) : propStartYear
 	);
@@ -67,6 +74,7 @@
 		count2: 0
 	});
 	let uniqueNames = [];
+	let topNames = []; // Top 1000 names by total births
 
 	const margin = { top: 10, right: 10, bottom: 30, left: 35 };
 	const color1 = "#6B46C1"; // purple
@@ -88,6 +96,16 @@
 		// Get unique names
 		const nameSet = new Set(all.map((d) => d.name));
 		uniqueNames = Array.from(nameSet).sort();
+
+		// Calculate top 1000 names by total births across all years
+		const nameTotals = new Map();
+		all.forEach((d) => {
+			nameTotals.set(d.name, (nameTotals.get(d.name) || 0) + d.n);
+		});
+		topNames = Array.from(nameTotals.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 1000)
+			.map(([name]) => name);
 
 		initChart();
 		render();
@@ -212,6 +230,32 @@
 		xAxis.attr("transform", `translate(0,${ih})`).call(xAxisGen);
 		yAxis.call(yAxisGen);
 
+		// Apply font styling to axis text (both .style() and .attr() for better SVG rendering)
+		xAxis
+			.selectAll("text")
+			.style(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.style("font-size", "16px")
+			.attr(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.attr("font-size", "16px");
+		yAxis
+			.selectAll("text")
+			.style(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.style("font-size", "16px")
+			.attr(
+				"font-family",
+				"Baloo Bhai 2, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
+			)
+			.attr("font-size", "16px");
+
 		// Hover interaction
 		hoverRect.attr("width", iw).attr("height", ih);
 		hoverLine.attr("y1", 0).attr("y2", ih);
@@ -255,6 +299,50 @@
 				hoverG.style("display", "none");
 				tooltip.show = false;
 			});
+
+		// Update drop zone positions based on line positions
+		if (isHidden && series1.length > 0 && series2.length > 0) {
+			// Find a point about 30% through the chart for left drop zone
+			const leftYear = Math.floor(startYear + (yearRange[1] - startYear) * 0.3);
+			const leftPoint1 =
+				series1.find((d) => d.date.getFullYear() >= leftYear) ||
+				series1[Math.floor(series1.length * 0.3)];
+
+			// Find a point about 70% through the chart for right drop zone
+			const rightYear = Math.floor(
+				startYear + (yearRange[1] - startYear) * 0.7
+			);
+			const rightPoint2 =
+				series2.find((d) => d.date.getFullYear() >= rightYear) ||
+				series2[Math.floor(series2.length * 0.7)];
+
+			if (leftPoint1 && rightPoint2) {
+				const y1Pos = y(leftPoint1.count);
+				const y2Pos = y(rightPoint2.count);
+
+				// Convert to percentages relative to chart dimensions
+				const topPercent =
+					((y1Pos + margin.top) / (ih + margin.top + margin.bottom)) * 100;
+				const bottomPercent =
+					((y2Pos + margin.top) / (ih + margin.top + margin.bottom)) * 100;
+
+				// Offset vertically to avoid covering the lines
+				// Purple line - offset up if space available, otherwise down
+				const offset1 = topPercent > 25 ? -15 : 15;
+				// Pink line - offset down if space available, otherwise up
+				const offset2 = bottomPercent < 75 ? 15 : -15;
+
+				// Left side for purple line, right side for pink line
+				dropZone1Position = {
+					top: `${Math.max(10, Math.min(80, topPercent + offset1))}%`,
+					left: `30%`
+				};
+				dropZone2Position = {
+					top: `${Math.max(10, Math.min(80, bottomPercent + offset2))}%`,
+					left: `70%`
+				};
+			}
+		}
 	}
 
 	$effect(() => {
@@ -275,10 +363,25 @@
 		showFeedback = true;
 
 		if (correct1 && correct2) {
+			showCorrectMessage = true;
 			confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 			setTimeout(() => {
 				isHidden = false;
+				showCorrectMessage = false;
 			}, 1000);
+		} else {
+			// Show wrong message
+			showWrongMessage = true;
+			setTimeout(() => {
+				showWrongMessage = false;
+			}, 1500);
+
+			// Reset drag buttons on incorrect guess
+			guess1 = "";
+			guess2 = "";
+			setTimeout(() => {
+				showFeedback = false;
+			}, 1500);
 		}
 	}
 
@@ -288,15 +391,86 @@
 		correct2 = true;
 	}
 
+	function handleDragStart(name) {
+		draggedName = name;
+	}
+
+	function handleDragEnd() {
+		draggedName = null;
+		dropZone1Highlight = false;
+		dropZone2Highlight = false;
+	}
+
+	function handleDrop(lineNumber) {
+		if (!draggedName) return;
+
+		if (lineNumber === 1) {
+			guess1 = draggedName;
+			dropZone1Highlight = false;
+		} else if (lineNumber === 2) {
+			guess2 = draggedName;
+			dropZone2Highlight = false;
+		}
+		draggedName = null;
+
+		// Auto-submit when both names have been dropped
+		setTimeout(() => {
+			if (guess1 && guess2) {
+				submitGuess();
+			}
+		}, 100);
+	}
+
+	function handleDragOver(event, lineNumber) {
+		event.preventDefault();
+		if (lineNumber === 1) {
+			dropZone1Highlight = true;
+		} else if (lineNumber === 2) {
+			dropZone2Highlight = true;
+		}
+	}
+
+	function handleDragLeave(lineNumber) {
+		if (lineNumber === 1) {
+			dropZone1Highlight = false;
+		} else if (lineNumber === 2) {
+			dropZone2Highlight = false;
+		}
+	}
+
 	function reset() {
+		isHidden = false;
+		guess1 = "";
+		guess2 = "";
+		correct1 = false;
+		correct2 = false;
+		showFeedback = false;
+		draggedName = null;
+		dropZone1Highlight = false;
+		dropZone2Highlight = false;
+	}
+
+	function pickRandomNames() {
+		if (topNames.length < 2) return;
+
+		// Pick two different random names from top 1000
+		const idx1 = Math.floor(Math.random() * topNames.length);
+		let idx2 = Math.floor(Math.random() * topNames.length);
+		while (idx2 === idx1) {
+			idx2 = Math.floor(Math.random() * topNames.length);
+		}
+
+		name1 = topNames[idx1];
+		name2 = topNames[idx2];
+		name1Input = name1;
+		name2Input = name2;
 		isHidden = true;
 		guess1 = "";
 		guess2 = "";
 		correct1 = false;
 		correct2 = false;
 		showFeedback = false;
-		name1 = defaultName1;
-		name2 = defaultName2;
+		render();
 	}
 
 	function handleName1Input(e) {
@@ -341,7 +515,7 @@
 </script>
 
 <div class="wrapper" bind:clientWidth={width}>
-	<h2 class="chart-title">Which Name Is Which?</h2>
+	<!-- <h2 class="chart-title">Which Name Is Which?</h2> -->
 
 	{#if isHidden}
 		<div class="possible-names">
@@ -355,10 +529,57 @@
 		</div>
 	{/if}
 
-	<div bind:this={container} class="chart-container">
+	<div
+		bind:this={container}
+		class="chart-container"
+		style="position: relative;"
+	>
 		<svg>
 			<g class="inner"></g>
 		</svg>
+
+		<!-- Correct message overlay -->
+		{#if showCorrectMessage}
+			<div class="message-overlay correct-overlay">
+				<div class="message-text">Correct! 🎉</div>
+			</div>
+		{/if}
+
+		<!-- Wrong message overlay -->
+		{#if showWrongMessage}
+			<div class="message-overlay wrong-overlay">
+				<div class="message-text">Try Again!</div>
+			</div>
+		{/if}
+
+		{#if isHidden}
+			<!-- Drop zones overlaid on chart -->
+			<div
+				class="chart-drop-zone"
+				class:highlighted={dropZone1Highlight}
+				ondragover={(e) => handleDragOver(e, 1)}
+				ondragleave={() => handleDragLeave(1)}
+				ondrop={() => handleDrop(1)}
+				style="border-color: {color1}; top: {dropZone1Position.top}; left: {dropZone1Position.left};"
+			>
+				<span class="drop-label" style="color: {color1}">
+					{guess1 || "↓"}
+				</span>
+			</div>
+
+			<div
+				class="chart-drop-zone"
+				class:highlighted={dropZone2Highlight}
+				ondragover={(e) => handleDragOver(e, 2)}
+				ondragleave={() => handleDragLeave(2)}
+				ondrop={() => handleDrop(2)}
+				style="border-color: {color2}; top: {dropZone2Position.top}; left: {dropZone2Position.left};"
+			>
+				<span class="drop-label" style="color: {color2}">
+					{guess2 || "↓"}
+				</span>
+			</div>
+		{/if}
 	</div>
 
 	<!-- tooltip outside container -->
@@ -374,6 +595,38 @@
 			<div style="color: {color2}; font-weight: 600;">
 				{tooltip.name2}: {tooltip.count2.toLocaleString()}
 			</div>
+		</div>
+	{/if}
+
+	<!-- Draggable names - always show when hidden, regardless of showControls -->
+	{#if isHidden}
+		<div class="drag-drop-instructions">
+			<strong>Drag names to the chart lines:</strong>
+		</div>
+
+		<div class="draggable-names">
+			{#if guess1 !== name1 && guess2 !== name1}
+				<div
+					class="name-tag"
+					class:dragging={draggedName === name1}
+					draggable="true"
+					ondragstart={() => handleDragStart(name1)}
+					ondragend={handleDragEnd}
+				>
+					{name1}
+				</div>
+			{/if}
+			{#if guess1 !== name2 && guess2 !== name2}
+				<div
+					class="name-tag"
+					class:dragging={draggedName === name2}
+					draggable="true"
+					ondragstart={() => handleDragStart(name2)}
+					ondragend={handleDragEnd}
+				>
+					{name2}
+				</div>
+			{/if}
 		</div>
 	{/if}
 
@@ -403,18 +656,11 @@
 								</ul>
 							{/if}
 						</div>
-						<div class="gender-buttons-inline">
-							<button
-								class:active={sex1 === "All"}
-								onclick={() => (sex1 = "All")}>All</button
-							>
-							<button class:active={sex1 === "F"} onclick={() => (sex1 = "F")}
-								>F</button
-							>
-							<button class:active={sex1 === "M"} onclick={() => (sex1 = "M")}
-								>M</button
-							>
-						</div>
+						<select bind:value={sex1} class="gender-select">
+							<option value="All">All</option>
+							<option value="F">Female</option>
+							<option value="M">Male</option>
+						</select>
 					</div>
 					<div class="setup-group">
 						<label>Choose Name 2 (Pink):</label>
@@ -438,18 +684,11 @@
 								</ul>
 							{/if}
 						</div>
-						<div class="gender-buttons-inline">
-							<button
-								class:active={sex2 === "All"}
-								onclick={() => (sex2 = "All")}>All</button
-							>
-							<button class:active={sex2 === "F"} onclick={() => (sex2 = "F")}
-								>F</button
-							>
-							<button class:active={sex2 === "M"} onclick={() => (sex2 = "M")}
-								>M</button
-							>
-						</div>
+						<select bind:value={sex2} class="gender-select">
+							<option value="All">All</option>
+							<option value="F">Female</option>
+							<option value="M">Male</option>
+						</select>
 					</div>
 				</div>
 
@@ -457,67 +696,31 @@
 					<button
 						class="start-btn"
 						onclick={() => {
+							console.log('Set Names & Start clicked! Current names:', name1, name2);
+							console.log('Setting isHidden to true');
 							isHidden = true;
 							showFeedback = false;
 							guess1 = "";
 							guess2 = "";
 							correct1 = false;
 							correct2 = false;
+							console.log('isHidden is now:', isHidden);
 						}}>Set Names & Start</button
+					>
+					<button class="random-btn" onclick={pickRandomNames}
+						>Random Names</button
 					>
 				</div>
 			{/if}
 
 			{#if isHidden}
-				<div class="possible-names">
-					<strong>Guess from these names:</strong>
-					{name1}, {name2}
-				</div>
-
-				<div class="guess-row">
-					<div class="guess-group">
-						<label style="color: {color1}">Purple line:</label>
-						<select bind:value={guess1}>
-							<option value="">-- Select --</option>
-							<option value={name1}>{name1}</option>
-							<option value={name2}>{name2}</option>
-						</select>
-					</div>
-					<div class="guess-group">
-						<label style="color: {color2}">Pink line:</label>
-						<select bind:value={guess2}>
-							<option value="">-- Select --</option>
-							<option value={name1}>{name1}</option>
-							<option value={name2}>{name2}</option>
-						</select>
-					</div>
-				</div>
-
-				{#if showFeedback}
-					<div class="feedback">
-						<span class:correct={correct1} class:wrong={!correct1}>
-							{correct1 ? "✓" : "✗"}
-							{correct1 ? name1 : "Try again"}
-						</span>
-						<span class:correct={correct2} class:wrong={!correct2}>
-							{correct2 ? "✓" : "✗"}
-							{correct2 ? name2 : "Try again"}
-						</span>
-					</div>
-				{/if}
-
 				<div class="button-row">
-					<button onclick={submitGuess}>Submit Guesses</button>
-					<button onclick={revealNames}>Reveal Names</button>
-				</div>
-			{:else}
-				<!-- <div class="names-revealed">
-					<span style="color: {color1}; font-weight: bold;">{name1}</span>
-					<span>vs</span>
-					<span style="color: {color2}; font-weight: bold;">{name2}</span>
-				</div> -->
-				<div class="button-row">
-					<button onclick={reset}>Reset Game</button>
+					<div class="reveal-reset-group">
+						<button class="reveal-btn" onclick={revealNames}
+							>Reveal Names</button
+						>
+						<button class="reset-btn" onclick={reset}>Reset</button>
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -546,6 +749,57 @@
 		font-family: "Baloo Bhai 2", sans-serif;
 	}
 
+	.message-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		pointer-events: none;
+		z-index: 100;
+		animation: fadeInOut 1.5s ease-in-out;
+	}
+
+	.message-text {
+		font-size: 48px;
+		font-weight: 700;
+		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+		padding: 20px 40px;
+		border-radius: 12px;
+	}
+
+	.correct-overlay .message-text {
+		color: #4caf50;
+		background: rgba(255, 255, 255, 0.95);
+	}
+
+	.wrong-overlay .message-text {
+		color: #f44336;
+		background: rgba(255, 255, 255, 0.95);
+	}
+
+	@keyframes fadeInOut {
+		0% {
+			opacity: 0;
+			transform: scale(0.8);
+		}
+		20% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		80% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		100% {
+			opacity: 0;
+			transform: scale(0.8);
+		}
+	}
+
 	.tooltip {
 		position: fixed;
 		background: rgba(0, 0, 0, 0.9);
@@ -571,6 +825,78 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
+	}
+
+	.drag-drop-instructions {
+		text-align: center;
+		margin: 16px 0 12px 0;
+		font-size: 16px;
+	}
+
+	.draggable-names {
+		display: flex;
+		gap: 12px;
+		justify-content: center;
+		margin-bottom: 20px;
+	}
+
+	.name-tag {
+		padding: 12px 24px;
+		background: #6b46c1;
+		color: white;
+		border-radius: 8px;
+		cursor: grab;
+		font-size: 18px;
+		font-weight: 600;
+		user-select: none;
+		transition: all 0.2s;
+	}
+
+	.name-tag:active {
+		cursor: grabbing;
+		opacity: 0.7;
+	}
+
+	.name-tag:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(107, 70, 193, 0.3);
+	}
+
+	.name-tag.dragging {
+		opacity: 0.3;
+	}
+
+	.chart-drop-zone {
+		position: absolute;
+		padding: 14px 28px;
+		border: 3px dashed;
+		border-radius: 8px;
+		text-align: center;
+		transition: all 0.2s;
+		background: rgba(255, 255, 255, 0.5);
+		pointer-events: all;
+		z-index: 10;
+		transform: translate(-50%, -50%);
+		min-width: 120px;
+		min-height: 50px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		backdrop-filter: blur(2px);
+	}
+
+	.chart-drop-zone.highlighted {
+		background: rgba(255, 255, 255, 0.75);
+		border-style: solid;
+		border-width: 4px;
+		transform: translate(-50%, -50%) scale(1.05);
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+	}
+
+	.chart-drop-zone .drop-label {
+		font-weight: 700;
+		font-size: 18px;
+		display: block;
 	}
 
 	.guess-row {
@@ -613,35 +939,51 @@
 		align-items: flex-end;
 	}
 
-	.gender-buttons-inline {
-		display: flex;
-		gap: 4px;
+	.gender-select {
+		width: 100%;
+		padding: 10px;
+		border: 2px solid #ddd;
+		border-radius: 6px;
+		font-size: 16px;
 		margin-top: 6px;
+		background: white;
+		cursor: pointer;
 	}
 
-	.gender-buttons-inline button {
-		padding: 6px 12px;
-		font-size: 13px;
-		background: transparent;
-		border: 2px solid #999;
-		flex: 1;
-		color: #333;
-	}
-
-	.gender-buttons-inline button.active {
-		background: #6b46c1;
+	.gender-select:focus {
+		outline: none;
 		border-color: #6b46c1;
-		color: white;
 	}
 
 	.start-row {
 		padding: 0 16px 16px 16px;
 		background: transparent;
 		border-radius: 0 0 8px 8px;
+		display: flex;
+		gap: 12px;
 	}
 
 	.start-btn {
-		width: 100%;
+		flex: 1;
+	}
+
+	.random-btn {
+		flex: 1;
+		padding: 12px 24px;
+		font-size: 18px;
+		font-weight: 600;
+		background: #4caf50;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.random-btn:hover {
+		background: #45a049;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
 	}
 
 	.setup-group {
@@ -691,8 +1033,10 @@
 	}
 
 	.suggestions li {
-		padding: 10px;
+		padding: 8px 14px;
 		cursor: pointer;
+		transition: background 0.15s;
+		font-size: 14px;
 	}
 
 	.suggestions li:hover,
@@ -705,7 +1049,7 @@
 		/* background: #f0e7ff; */
 		/* border-radius: 6px; */
 		text-align: center;
-		font-size: 26px;
+		font-size: 24px;
 	}
 
 	.feedback {
@@ -726,6 +1070,14 @@
 	.button-row {
 		display: flex;
 		gap: 12px;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.reveal-reset-group {
+		display: flex;
+		gap: 12px;
+		justify-content: center;
 	}
 
 	button {
@@ -744,6 +1096,44 @@
 		background: #5a3a9f;
 	}
 
+	.reveal-btn {
+		padding: 12px 24px;
+		font-size: 18px;
+		font-weight: 600;
+		background: #ff9800;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 0.2s;
+		min-width: 140px;
+	}
+
+	.reveal-btn:hover {
+		background: #f57c00;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+	}
+
+	.reset-btn {
+		padding: 12px 24px;
+		font-size: 18px;
+		font-weight: 600;
+		background: #999;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 0.2s;
+		min-width: 140px;
+	}
+
+	.reset-btn:hover {
+		background: #777;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(153, 153, 153, 0.3);
+	}
+
 	.names-revealed {
 		display: flex;
 		gap: 12px;
@@ -756,15 +1146,27 @@
 		font-size: 16px;
 	}
 
+	:global(.axis text) {
+		font-family:
+			"Baloo Bhai 2",
+			-apple-system,
+			BlinkMacSystemFont,
+			Helvetica,
+			Arial,
+			sans-serif;
+		font-size: 16px;
+	}
+
 	:global(.axis path),
 	:global(.axis line) {
-		stroke: #ddd;
+		stroke: #555;
+		shape-rendering: crispEdges;
 	}
 
 	@media (max-width: 768px) {
 		.guess-row,
 		.name-setup {
-			flex-direction: column;
+			flex-direction: row;
 			align-items: center;
 		}
 

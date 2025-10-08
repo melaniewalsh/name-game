@@ -11,7 +11,10 @@
 	import DotPlotSimple from "$components/DotPlotSimple.svelte";
 	import DotPlotMultiplayer from "$components/DotPlotMultiplayer.svelte";
 	import MultiplayerButton from "$components/MultiplayerButton.svelte";
+	import LineChart from "$components/LineChart.svelte";
 	import Versus from "$components/Versus.svelte";
+	import VersusMultiplayer from "$components/VersusMultiplayer.svelte";
+	import VersusMultiplayerButton from "$components/VersusMultiplayerButton.svelte";
 	import Table from "$components/Table.svelte";
 	import Grid from "$components/Grid.svelte";
 	import { register } from "swiper/element/bundle";
@@ -19,7 +22,7 @@
 	const copy = getContext("copy");
 	const { body } = copy;
 	const { title, description, byline, others } = copy.meta;
-	const components = { Ul, Details, Swiper, DotPlot, DotPlotSimple, DotPlotMultiplayer, MultiplayerButton, Versus, Figure, Table, Grid };
+	const components = { Ul, Details, Swiper, DotPlot, DotPlotSimple, DotPlotMultiplayer, MultiplayerButton, LineChart, Versus, VersusMultiplayer, VersusMultiplayerButton, Figure, Table, Grid };
 	// const data = getContext("data");
 
 	onMount(() => {

@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
+import { browser } from '$app/environment';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDN0J2BPQMFf94PTf9vFUP06ch_mnWgwKk",
@@ -12,8 +13,13 @@ const firebaseConfig = {
   measurementId: "G-RXPG66NEMR"
 };
 
-// Initialize Firebase (only if it hasn't been initialized)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const database = getDatabase(app);
+// Initialize Firebase (only in browser and only if it hasn't been initialized)
+let app = null;
+let database = null;
+
+if (browser) {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  database = getDatabase(app);
+}
 
 export { app, database };

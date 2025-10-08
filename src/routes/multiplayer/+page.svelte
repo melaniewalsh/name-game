@@ -15,6 +15,12 @@
 	.multiplayer-page {
 		min-height: 100vh;
 		padding: 20px;
-		background: #f5f5f5;
+		background: white;
+	}
+
+	@media (max-width: 768px) {
+		.multiplayer-page {
+			padding: 0;
+		}
 	}
 </style>
