@@ -438,21 +438,67 @@
 		}
 	}
 
-	// Touch event handlers for mobile support
+	// Touch event handlers for mobile support with long-press
 	let touchStartY = null;
 	let touchedName = null;
+	let dragGhostPosition = $state({ x: 0, y: 0, show: false });
+	let longPressTimer = null;
+	let isDragActive = $state(false);
+	let longPressStarted = $state(null);
 
 	function handleTouchStart(event, name) {
 		touchedName = name;
-		draggedName = name;
-		touchStartY = event.touches[0].clientY;
+		longPressStarted = name;
+		const touch = event.touches[0];
+		touchStartY = touch.clientY;
+
+		// Start long-press timer (300ms)
+		longPressTimer = setTimeout(() => {
+			// Long press activated!
+			event.preventDefault();
+			isDragActive = true;
+			draggedName = name;
+
+			// Haptic feedback if available
+			if (navigator.vibrate) {
+				navigator.vibrate(50);
+			}
+
+			// Show drag ghost at touch position
+			dragGhostPosition = {
+				x: touch.clientX,
+				y: touch.clientY,
+				show: true
+			};
+		}, 300);
 	}
 
 	function handleTouchMove(event) {
-		if (!touchedName) return;
+		// If drag not active yet, check if finger moved too much (cancel long press)
+		if (!isDragActive) {
+			const touch = event.touches[0];
+			const deltaY = Math.abs(touch.clientY - touchStartY);
+			if (deltaY > 10) {
+				// Finger moved too much, cancel long press
+				clearTimeout(longPressTimer);
+				longPressStarted = null;
+			}
+			return;
+		}
+
+		// Drag is active, prevent scrolling and track movement
+		event.preventDefault();
 
 		// Get the touch position
 		const touch = event.touches[0];
+
+		// Update drag ghost position
+		dragGhostPosition = {
+			x: touch.clientX,
+			y: touch.clientY,
+			show: true
+		};
+
 		const element = document.elementFromPoint(touch.clientX, touch.clientY);
 
 		// Check if we're over a drop zone
@@ -473,7 +519,20 @@
 	}
 
 	function handleTouchEnd(event) {
-		if (!touchedName) return;
+		// Clear long press timer if still waiting
+		clearTimeout(longPressTimer);
+		longPressStarted = null;
+
+		if (!isDragActive) {
+			// Long press didn't complete, just reset
+			touchedName = null;
+			return;
+		}
+
+		event.preventDefault();
+
+		// Hide drag ghost
+		dragGhostPosition = { x: 0, y: 0, show: false };
 
 		// Get the final touch position
 		const touch = event.changedTouches[0];
@@ -483,6 +542,12 @@
 		if (element && element.closest('.chart-drop-zone')) {
 			const dropZone = element.closest('.chart-drop-zone');
 			const dropZones = document.querySelectorAll('.chart-drop-zone');
+
+			// Haptic feedback on drop
+			if (navigator.vibrate) {
+				navigator.vibrate(30);
+			}
+
 			if (dropZone === dropZones[0]) {
 				handleDrop(1);
 			} else if (dropZone === dropZones[1]) {
@@ -493,6 +558,7 @@
 		// Reset state
 		touchedName = null;
 		draggedName = null;
+		isDragActive = false;
 		dropZone1Highlight = false;
 		dropZone2Highlight = false;
 	}
@@ -660,7 +726,7 @@
 	<!-- Draggable names - always show when hidden, regardless of showControls -->
 	{#if isHidden}
 		<div class="drag-drop-instructions">
-			<strong>Drag names to the chart lines:</strong>
+			<strong>Hold and drag names to the chart lines:</strong>
 		</div>
 
 		<div class="draggable-names">
@@ -668,6 +734,7 @@
 				<div
 					class="name-tag"
 					class:dragging={draggedName === name1}
+					class:long-pressing={longPressStarted === name1 && !isDragActive}
 					draggable="true"
 					ondragstart={() => handleDragStart(name1)}
 					ondragend={handleDragEnd}
@@ -682,6 +749,7 @@
 				<div
 					class="name-tag"
 					class:dragging={draggedName === name2}
+					class:long-pressing={longPressStarted === name2 && !isDragActive}
 					draggable="true"
 					ondragstart={() => handleDragStart(name2)}
 					ondragend={handleDragEnd}
@@ -693,6 +761,16 @@
 				</div>
 			{/if}
 		</div>
+
+		<!-- Drag ghost for mobile -->
+		{#if dragGhostPosition.show && touchedName}
+			<div
+				class="drag-ghost"
+				style="left: {dragGhostPosition.x}px; top: {dragGhostPosition.y}px;"
+			>
+				{touchedName}
+			</div>
+		{/if}
 	{/if}
 
 	{#if showControls === true || showControls === "true"}
@@ -929,8 +1007,41 @@
 		box-shadow: 0 4px 8px rgba(107, 70, 193, 0.3);
 	}
 
+	.name-tag.long-pressing {
+		animation: pulse 0.3s ease-in-out;
+		transform: scale(1.05);
+	}
+
+	@keyframes pulse {
+		0% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.05);
+		}
+		100% {
+			transform: scale(1.05);
+		}
+	}
+
 	.name-tag.dragging {
-		opacity: 0.3;
+		opacity: 0.1;
+	}
+
+	.drag-ghost {
+		position: fixed;
+		padding: 12px 24px;
+		background: #6b46c1;
+		color: white;
+		border-radius: 8px;
+		font-size: 18px;
+		font-weight: 600;
+		pointer-events: none;
+		z-index: 1000;
+		transform: translate(-50%, -50%) scale(1.05);
+		opacity: 0.95;
+		box-shadow: 0 8px 16px rgba(107, 70, 193, 0.6);
+		cursor: grabbing;
 	}
 
 	.chart-drop-zone {
