@@ -452,7 +452,7 @@
 		const touch = event.touches[0];
 		touchStartY = touch.clientY;
 
-		// Start long-press timer (300ms)
+		// Start long-press timer (30ms)
 		longPressTimer = setTimeout(() => {
 			// Long press activated!
 			event.preventDefault();
@@ -470,7 +470,7 @@
 				y: touch.clientY,
 				show: true
 			};
-		}, 300);
+		}, 30);
 	}
 
 	function handleTouchMove(event) {
@@ -726,7 +726,7 @@
 	<!-- Draggable names - always show when hidden, regardless of showControls -->
 	{#if isHidden}
 		<div class="drag-drop-instructions">
-			<strong>Hold and drag names to the chart lines:</strong>
+			<strong>Drag names to the chart lines:</strong>
 		</div>
 
 		<div class="draggable-names">
@@ -1008,7 +1008,7 @@
 	}
 
 	.name-tag.long-pressing {
-		animation: pulse 0.3s ease-in-out;
+		animation: pulse 0.03s ease-in-out;
 		transform: scale(1.05);
 	}
 
