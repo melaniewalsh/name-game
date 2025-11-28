@@ -19,7 +19,13 @@ const config = {
 			base: process.env.NODE_ENV === 'production' ? '/name-game' : ''
 		},
 		prerender: {
-			handleMissingId: 'ignore'
+			handleMissingId: 'ignore',
+			handleHttpError: ({ status, path }) => {
+				if (status === 404 && (path === '/versus-multiplayer' || path === '/multiplayer')) {
+					return;
+				}
+				throw new Error(`${status} ${path}`);
+			}
 		}
 	}
 };

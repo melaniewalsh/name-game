@@ -25,7 +25,7 @@
 
 	// Hardcode highlight years for Melanie
 	const highlightYears =
-		name.toLowerCase() === "melanie" ? [1972, 1990, 2006] : [];
+		name.toLowerCase() === "melanie" ? [1972, 1990, 2006] : propHighlightYears || [];
 
 	// Reactive margin based on mode
 	let margin = $derived(
