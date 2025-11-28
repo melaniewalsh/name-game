@@ -609,7 +609,8 @@
 		<!-- Footer for screenshots -->
 		<div class="screenshot-footer">
 			<div class="footer-text">
-				Data: U.S. Social Security Administration | What's That Baby Name?
+				Data: U.S. Social Security Administration | Chart: What's That Baby
+				Name?
 			</div>
 		</div>
 

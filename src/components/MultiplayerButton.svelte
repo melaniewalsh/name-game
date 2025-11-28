@@ -1,6 +1,6 @@
 <script>
 	import { base } from "$app/paths";
-	import DotPlotMultiplayer from "./DotPlotMultiplayer.svelte";
+	import GuessLineChartMultiplayer from "./GuessLineChartMultiplayer.svelte";
 
 	let showMultiplayer = $state(true);
 </script>
@@ -16,16 +16,16 @@
 	{#if showMultiplayer}
 		<div class="multiplayer-box">
 			<div class="multiplayer-header">
-				<p class="multiplayer-description">
+				<!-- <p class="multiplayer-description">
 					Want to play with friends in real-time? One person becomes the host,
 					picks a name, and adds optional name choices. Then they share a room
 					code with friends who can join and compete to guess the name first!
-				</p>
+				</p> -->
 				<a href="{base}/multiplayer" target="_blank" class="open-tab-btn">
 					Open in New Tab →
 				</a>
 			</div>
-			<DotPlotMultiplayer />
+			<GuessLineChartMultiplayer />
 		</div>
 	{/if}
 </div>

@@ -16,12 +16,16 @@
 	{#if showMultiplayer}
 		<div class="multiplayer-box">
 			<div class="multiplayer-header">
-				<p class="multiplayer-description">
+				<!-- <p class="multiplayer-description">
 					Want to play with friends in real-time? One person becomes the host,
 					picks two names, and players compete to guess which name is which by
 					dragging names to the correct lines. Share a room code with friends!
-				</p>
-				<a href="{base}/versus-multiplayer" target="_blank" class="open-tab-btn">
+				</p> -->
+				<a
+					href="{base}/versus-multiplayer"
+					target="_blank"
+					class="open-tab-btn"
+				>
 					Open in New Tab →
 				</a>
 			</div>

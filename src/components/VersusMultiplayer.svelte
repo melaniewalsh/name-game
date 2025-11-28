@@ -3,10 +3,22 @@
 	import { browser } from "$app/environment";
 	import { base } from "$app/paths";
 	import { database } from "$lib/firebase";
-	import { ref, set, onValue, push, update, off } from "firebase/database";
+	import {
+		ref,
+		set,
+		onValue,
+		push,
+		update,
+		off,
+		get,
+		remove
+	} from "firebase/database";
 	import Versus from "$components/Versus.svelte";
 
 	const { id = "multiplayer-versus-game" } = $props();
+
+	// Room timeout (30 minutes of inactivity)
+	const ROOM_TIMEOUT_MS = 30 * 60 * 1000;
 
 	// Game state
 	let gameMode = $state("menu"); // 'menu' | 'host' | 'player'
@@ -22,12 +34,17 @@
 	let hostChartElement = $state(null);
 	let playerChartElement = $state(null);
 	let playerLastGuessResult = $state(null); // 'correct' | 'incorrect' | null
-	let lastSubmittedGuess = $state(""); // Track last submitted guess to prevent duplicates
+	let hostLastGuessResult = $state(null); // 'correct' | 'incorrect' | null for host
+	let isSubmittingGuess = $state(false); // Prevent concurrent submissions
 
 	// Game configuration
 	let maxAttempts = $state(3);
 	let correctPoints = $state(1);
 	let incorrectPoints = $state(0);
+	let maxRounds = $state(5);
+	let currentRound = $state(1);
+	let hostAnnouncement = $state("");
+	let announcementInput = $state("");
 
 	// Sorted players list (derived from players)
 	let sortedPlayers = $derived(
@@ -39,6 +56,21 @@
 			return (b.score || 0) - (a.score || 0);
 		})
 	);
+
+	// Check if game is over and find winner(s)
+	let isGameComplete = $derived(
+		gameState &&
+			(gameState.gameEnded ||
+				(gameState.currentRound >= (gameState.maxRounds ?? 5) &&
+					!gameState.isHidden &&
+					gameState.gameStarted))
+	);
+
+	let winners = $derived.by(() => {
+		if (!isGameComplete || players.length === 0) return [];
+		const maxScore = Math.max(...players.map((p) => p.score || 0));
+		return players.filter((p) => (p.score || 0) === maxScore);
+	});
 
 	// Generate a random 6-character room code
 	function generateRoomCode() {
@@ -69,10 +101,15 @@
 			name2: "",
 			isHidden: false,
 			createdAt: Date.now(),
+			lastActivity: Date.now(),
 			gameStarted: false,
+			gameEnded: false,
 			maxAttempts: maxAttempts,
 			correctPoints: correctPoints,
-			incorrectPoints: incorrectPoints
+			incorrectPoints: incorrectPoints,
+			maxRounds: maxRounds,
+			currentRound: 1,
+			announcement: ""
 		});
 
 		// Add host as first player
@@ -93,6 +130,7 @@
 		gameMode = "host";
 		updateURL();
 		listenToRoom();
+		startActivityHeartbeat();
 	}
 
 	// Join an existing room
@@ -114,8 +152,27 @@
 		roomCode = roomCodeInput.trim().toUpperCase();
 		playerId = push(ref(database)).key;
 
-		// Check if room exists
+		// Check if room exists and is still active
 		roomRef = ref(database, `versus-rooms/${roomCode}`);
+		const roomSnapshot = await get(roomRef);
+
+		if (!roomSnapshot.exists()) {
+			alert("Room not found. Please check the room code and try again.");
+			return;
+		}
+
+		const roomData = roomSnapshot.val();
+		const lastActivity = roomData.lastActivity || roomData.createdAt;
+		const timeSinceActivity = Date.now() - lastActivity;
+
+		if (timeSinceActivity > ROOM_TIMEOUT_MS) {
+			alert(
+				"This room has been inactive for too long and is no longer available."
+			);
+			// Clean up the expired room
+			await remove(roomRef);
+			return;
+		}
 
 		// Add player to room
 		const playerRef = ref(
@@ -132,6 +189,9 @@
 			joinedAt: Date.now()
 		});
 
+		// Update room activity
+		await update(roomRef, { lastActivity: Date.now() });
+
 		gameMode = "player";
 		updateURL();
 		listenToRoom();
@@ -144,6 +204,14 @@
 		onValue(roomRef, (snapshot) => {
 			if (snapshot.exists()) {
 				gameState = snapshot.val();
+				// Sync local state with Firebase
+				if (gameMode === "host") {
+					maxRounds = gameState.maxRounds ?? 5;
+					currentRound = gameState.currentRound ?? 1;
+					hostAnnouncement = gameState.announcement ?? "";
+				} else {
+					hostAnnouncement = gameState.announcement ?? "";
+				}
 			}
 		});
 
@@ -167,10 +235,60 @@
 		}
 	}
 
+	// Send announcement
+	async function sendAnnouncement() {
+		if (gameMode === "host" && roomRef && announcementInput.trim()) {
+			await updateGameState({ announcement: announcementInput.trim() });
+			announcementInput = "";
+		}
+	}
+
+	// Clear announcement
+	async function clearAnnouncement() {
+		if (gameMode === "host" && roomRef) {
+			await updateGameState({ announcement: "" });
+		}
+	}
+
+	// Increment round
+	async function nextRound() {
+		if (gameMode === "host" && roomRef) {
+			const newRound = (gameState?.currentRound ?? 1) + 1;
+			await updateGameState({ currentRound: newRound });
+		}
+	}
+
+	// Handle host guess from Versus component callback
+	function handleHostGuess(guess1, guess2, isCorrect) {
+		console.log(
+			"[handleHostGuess] Host made guess:",
+			guess1,
+			"vs",
+			guess2,
+			"Correct:",
+			isCorrect
+		);
+		submitPlayerGuess(guess1, guess2);
+	}
+
+	// Handle player guess from Versus component callback
+	function handlePlayerGuess(guess1, guess2, isCorrect) {
+		console.log(
+			"[handlePlayerGuess] Player made guess:",
+			guess1,
+			"vs",
+			guess2,
+			"Correct:",
+			isCorrect
+		);
+		submitPlayerGuess(guess1, guess2);
+	}
+
 	// Track the last known names before hiding
 	let lastKnownName1 = $state("");
 	let lastKnownName2 = $state("");
 	let lastIsHidden = $state(false);
+	let hasStartedFirstRound = $state(false); // Track if we've started the first round yet
 
 	// Reset all players' attempt counts for a new round
 	async function resetAllPlayersAttempts() {
@@ -260,23 +378,84 @@
 					console.log("[VersusMultiplayer] Updating Firebase with:", {
 						isHidden,
 						name1: lastKnownName1,
-						name2: lastKnownName2
+						name2: lastKnownName2,
+						wasHidden: lastIsHidden
 					});
 
-					// If transitioning from revealed to hidden (starting new round), reset attempts
+					// If transitioning from revealed to hidden (starting new round), reset attempts and increment round
 					if (!lastIsHidden && isHidden) {
 						console.log(
-							"[VersusMultiplayer] New round starting, resetting attempts"
+							"[VersusMultiplayer] Transition to hidden detected. First round:",
+							!hasStartedFirstRound
 						);
-						// Wait for attempts to be reset before updating game state
-						resetAllPlayersAttempts().then(() => {
-							updateGameState({
-								isHidden,
-								name1: lastKnownName1,
-								name2: lastKnownName2
+
+						// Clear host feedback
+						hostLastGuessResult = null;
+						isSubmittingGuess = false;
+
+						// Only increment round if this is NOT the first round starting
+						if (hasStartedFirstRound) {
+							console.log(
+								"[VersusMultiplayer] Starting new round, resetting attempts"
+							);
+							// Increment round counter for subsequent rounds
+							const newRound = (gameState?.currentRound ?? 1) + 1;
+							// Wait for attempts to be reset before updating game state
+							resetAllPlayersAttempts().then(() => {
+								updateGameState({
+									isHidden,
+									name1: lastKnownName1,
+									name2: lastKnownName2,
+									currentRound: newRound,
+									gameStarted: true
+								});
 							});
+						} else {
+							console.log(
+								"[VersusMultiplayer] First round starting, not incrementing"
+							);
+							// First round - just update state, don't increment
+							hasStartedFirstRound = true;
+							// Still reset attempts in case there were any test guesses
+							resetAllPlayersAttempts().then(() => {
+								updateGameState({
+									isHidden,
+									name1: lastKnownName1,
+									name2: lastKnownName2,
+									gameStarted: true
+									// Keep currentRound as is
+								});
+							});
+						}
+					}
+					// If revealing names (hidden -> not hidden), just update state
+					else if (lastIsHidden && !isHidden) {
+						console.log("[VersusMultiplayer] Revealing names to players");
+						updateGameState({
+							isHidden,
+							name1: lastKnownName1,
+							name2: lastKnownName2,
+							gameStarted: true
 						});
-					} else {
+					}
+					// If names changed while not hidden (host is searching for new names), mark game as not started
+					else if (
+						!isHidden &&
+						(gameState.name1 !== lastKnownName1 ||
+							gameState.name2 !== lastKnownName2)
+					) {
+						console.log(
+							"[VersusMultiplayer] Names changed while revealed - host is setting up"
+						);
+						updateGameState({
+							isHidden,
+							name1: lastKnownName1,
+							name2: lastKnownName2,
+							gameStarted: false
+						});
+					}
+					// Otherwise just update normally
+					else {
 						updateGameState({
 							isHidden,
 							name1: lastKnownName1,
@@ -312,144 +491,173 @@
 		if (!gameState || !gameState.isHidden || !guess1.trim() || !guess2.trim())
 			return;
 
-		const currentPlayer = players.find((p) => p.id === playerId);
-		const currentAttemptCount = currentPlayer?.attemptCount || 0;
-		const maxAttemptsAllowed = gameState.maxAttempts ?? 3;
-
-		console.log(
-			"[Attempt Check] Current attempts:",
-			currentAttemptCount,
-			"Max allowed:",
-			maxAttemptsAllowed
-		);
-
-		// Check if player has exceeded max attempts
-		if (currentAttemptCount >= maxAttemptsAllowed) {
-			console.log("Max attempts reached - blocking submission");
+		// Prevent concurrent submissions
+		if (isSubmittingGuess) {
+			console.log("Already submitting a guess, skipping");
 			return;
 		}
 
-		const g1 = guess1.toLowerCase().trim();
-		const g2 = guess2.toLowerCase().trim();
+		// Set flag immediately to block any concurrent calls
+		isSubmittingGuess = true;
 
-		// Create a unique key for this guess to prevent rapid duplicate submissions
-		const guessKey = `${g1}|${g2}`;
-		if (guessKey === lastSubmittedGuess) {
-			console.log("Duplicate guess detected (same as last), skipping");
-			return;
-		}
-		console.log("[Submitting Guess]", g1, "and", g2);
-		lastSubmittedGuess = guessKey;
+		try {
+			// Read current player data from Firebase to avoid stale data from listener
+			const playerRef = ref(
+				database,
+				`versus-rooms/${roomCode}/players/${playerId}`
+			);
+			const playerSnapshot = await get(playerRef);
+			const currentPlayerData = playerSnapshot.val();
 
-		// Clear the duplicate check after a short delay to allow retrying the same guess later
-		setTimeout(() => {
-			if (lastSubmittedGuess === guessKey) {
-				lastSubmittedGuess = "";
+			if (!currentPlayerData) {
+				console.error("Player data not found in Firebase");
+				isSubmittingGuess = false;
+				return;
 			}
-		}, 1000);
 
-		const name1Lower = gameState.name1.toLowerCase().trim();
-		const name2Lower = gameState.name2.toLowerCase().trim();
+			const currentAttemptCount = currentPlayerData.attemptCount || 0;
+			const currentScore = currentPlayerData.score ?? 0;
+			const maxAttemptsAllowed = gameState.maxAttempts ?? 3;
 
-		// Order matters - must match name1 to position 1 and name2 to position 2
-		const correct1 = g1 === name1Lower;
-		const correct2 = g2 === name2Lower;
-		const isCorrect = correct1 && correct2;
+			console.log(
+				"[Attempt Check]",
+				"Player name:",
+				currentPlayerData.name,
+				"| Player ID:",
+				playerId,
+				"| Mode:",
+				gameMode,
+				"| Current attempts:",
+				currentAttemptCount,
+				"| Current score:",
+				currentScore,
+				"| Max:",
+				maxAttemptsAllowed
+			);
 
-		console.log("Guess 1:", g1, "Guess 2:", g2);
-		console.log("Name 1:", name1Lower, "Name 2:", name2Lower);
-		console.log("Correct:", isCorrect);
+			// Check if player has exceeded max attempts
+			if (currentAttemptCount >= maxAttemptsAllowed) {
+				console.log("Max attempts reached - blocking submission");
+				isSubmittingGuess = false;
+				return;
+			}
 
-		const currentScore = currentPlayer?.score || 0;
+			const g1 = guess1.toLowerCase().trim();
+			const g2 = guess2.toLowerCase().trim();
 
-		// Use nullish coalescing to properly handle 0 and negative values
-		const correctPts = gameState.correctPoints ?? 1;
-		const incorrectPts = gameState.incorrectPoints ?? 0;
-		const pointsToAdd = isCorrect ? correctPts : incorrectPts;
-		const newScore = currentScore + pointsToAdd;
-		const newAttemptCount = currentAttemptCount + 1;
+			console.log("[Submitting Guess]", g1, "and", g2, "for", gameMode);
 
-		console.log(
-			"GameState correctPoints:",
-			gameState.correctPoints,
-			"incorrectPoints:",
-			gameState.incorrectPoints
-		);
-		console.log("Using correctPts:", correctPts, "incorrectPts:", incorrectPts);
-		console.log(
-			"Current score:",
-			currentScore,
-			"Points to add:",
-			pointsToAdd,
-			"New score:",
-			newScore
-		);
-		console.log(
-			"Attempt count:",
-			currentAttemptCount,
-			"New attempt count:",
-			newAttemptCount
-		);
+			const name1Lower = gameState.name1.toLowerCase().trim();
+			const name2Lower = gameState.name2.toLowerCase().trim();
 
-		const playerRef = ref(
-			database,
-			`versus-rooms/${roomCode}/players/${playerId}`
-		);
-		await update(playerRef, {
-			lastGuess1: guess1,
-			lastGuess2: guess2,
-			isCorrect,
-			score: newScore,
-			attemptCount: newAttemptCount,
-			guessedAt: Date.now()
-		});
+			// Order matters - must match name1 to position 1 and name2 to position 2
+			const correct1 = g1 === name1Lower;
+			const correct2 = g2 === name2Lower;
+			const isCorrect = correct1 && correct2;
 
-		playerLastGuessResult = isCorrect ? "correct" : "incorrect";
+			console.log("Guess 1:", g1, "Guess 2:", g2);
+			console.log("Name 1:", name1Lower, "Name 2:", name2Lower);
+			console.log("Correct:", isCorrect);
 
-		// Clear the result after 2 seconds
-		setTimeout(() => {
-			playerLastGuessResult = null;
-		}, 2000);
-	}
+			// Use nullish coalescing to properly handle 0 and negative values
+			const correctPts = gameState.correctPoints ?? 1;
+			const incorrectPts = gameState.incorrectPoints ?? 0;
+			const pointsToAdd = isCorrect ? correctPts : incorrectPts;
+			const newScore = currentScore + pointsToAdd;
+			const newAttemptCount = currentAttemptCount + 1;
 
-	// Monitor player chart for guesses via the built-in Versus component
-	$effect(() => {
-		if (gameMode === "player" && playerChartElement && gameState?.isHidden) {
-			// Listen for drag-and-drop completion (auto-submit)
-			const dropZones = playerChartElement.querySelectorAll(".chart-drop-zone");
+			console.log(
+				"GameState correctPoints:",
+				gameState.correctPoints,
+				"incorrectPoints:",
+				gameState.incorrectPoints
+			);
+			console.log(
+				"Using correctPts:",
+				correctPts,
+				"incorrectPts:",
+				incorrectPts
+			);
+			console.log(
+				"Current score:",
+				currentScore,
+				"Points to add:",
+				pointsToAdd,
+				"New score:",
+				newScore
+			);
+			console.log(
+				"Attempt count:",
+				currentAttemptCount,
+				"New attempt count:",
+				newAttemptCount
+			);
 
-			// Watch for changes in drop zones to detect when both names are dropped
-			const observer = new MutationObserver(() => {
-				const dropZone1 = playerChartElement.querySelector(
-					".chart-drop-zone:nth-of-type(1) .drop-label"
-				);
-				const dropZone2 = playerChartElement.querySelector(
-					".chart-drop-zone:nth-of-type(2) .drop-label"
-				);
+			console.log(
+				"[Updating Firebase]",
+				"Player:",
+				currentPlayerData.name,
+				"| ID:",
+				playerId,
+				"| Path:",
+				`versus-rooms/${roomCode}/players/${playerId}`,
+				"| Old score:",
+				currentScore,
+				"| New score:",
+				newScore,
+				"| New attempts:",
+				newAttemptCount,
+				"(was",
+				currentAttemptCount,
+				") | Correct:",
+				isCorrect
+			);
 
-				if (dropZone1 && dropZone2) {
-					const guess1 = dropZone1.textContent.trim();
-					const guess2 = dropZone2.textContent.trim();
-
-					// Check if both zones have names (not just arrows)
-					if (guess1 && guess2 && guess1 !== "↓" && guess2 !== "↓") {
-						// Submit after a short delay to allow the auto-submit to process
-						setTimeout(() => {
-							submitPlayerGuess(guess1, guess2);
-						}, 200);
-					}
-				}
+			await update(playerRef, {
+				lastGuess1: guess1,
+				lastGuess2: guess2,
+				isCorrect,
+				score: newScore,
+				attemptCount: newAttemptCount,
+				guessedAt: Date.now()
 			});
 
-			observer.observe(playerChartElement, {
-				childList: true,
-				subtree: true,
-				characterData: true
-			});
+			// Update room activity timestamp
+			if (gameMode === "host") {
+				await updateGameState({ lastActivity: Date.now() });
+			}
 
-			return () => observer.disconnect();
+			console.log(
+				"[Firebase Updated]",
+				currentPlayerData.name,
+				"score:",
+				currentScore,
+				"→",
+				newScore,
+				"| attempts:",
+				currentAttemptCount,
+				"→",
+				newAttemptCount
+			);
+
+			// Set feedback for host or player
+			if (gameMode === "host") {
+				// Keep host feedback on screen until new round starts
+				hostLastGuessResult = isCorrect ? "correct" : "incorrect";
+			} else {
+				playerLastGuessResult = isCorrect ? "correct" : "incorrect";
+				setTimeout(() => {
+					playerLastGuessResult = null;
+				}, 2000);
+			}
+		} catch (error) {
+			console.error("Error submitting guess:", error);
+		} finally {
+			// Clear submitting flag
+			isSubmittingGuess = false;
+			console.log("[Submission complete, flag cleared]");
 		}
-	});
+	}
 
 	// Copy room code to clipboard
 	let copyButtonText = $state("Copy");
@@ -503,6 +711,8 @@
 	function leaveRoom() {
 		if (roomRef) off(roomRef);
 		if (playersRef) off(playersRef);
+		if (activityInterval) clearInterval(activityInterval);
+
 		gameMode = "menu";
 		roomCode = "";
 		roomCodeInput = "";
@@ -510,7 +720,8 @@
 		players = [];
 		copyButtonText = "Copy";
 		copyLinkText = "Copy Link";
-		lastSubmittedGuess = "";
+		hasStartedFirstRound = false;
+		isSubmittingGuess = false;
 
 		// Clear URL params
 		if (browser) {
@@ -520,7 +731,66 @@
 		}
 	}
 
-	// Check for room code in URL on mount
+	// End game and show winner announcement
+	async function endGame() {
+		if (gameMode !== "host" || !roomRef) return;
+
+		console.log("[VersusMultiplayer] Ending game");
+
+		await updateGameState({
+			gameEnded: true,
+			isHidden: false,
+			lastActivity: Date.now()
+		});
+
+		console.log("[VersusMultiplayer] Game ended, showing winner");
+	}
+
+	// Restart game (reset scores and rounds but keep players)
+	async function restartGame() {
+		if (gameMode !== "host" || !roomRef) return;
+
+		console.log("[VersusMultiplayer] Restarting game");
+
+		// Reset all player scores and attempts
+		const resetPromises = players.map((player) => {
+			const playerRef = ref(
+				database,
+				`versus-rooms/${roomCode}/players/${player.id}`
+			);
+			return update(playerRef, {
+				score: 0,
+				attemptCount: 0,
+				isCorrect: false,
+				lastGuess1: "",
+				lastGuess2: ""
+			});
+		});
+
+		await Promise.all(resetPromises);
+
+		// Reset game state
+		await updateGameState({
+			currentRound: 1,
+			gameStarted: false,
+			gameEnded: false,
+			isHidden: false,
+			name1: "",
+			name2: "",
+			lastActivity: Date.now()
+		});
+
+		// Reset local state
+		hasStartedFirstRound = false;
+		hostLastGuessResult = null;
+		isSubmittingGuess = false;
+
+		console.log("[VersusMultiplayer] Game restarted");
+	}
+
+	// Periodic activity heartbeat interval
+	let activityInterval = null;
+
 	onMount(() => {
 		if (browser) {
 			const urlParams = new URLSearchParams(window.location.search);
@@ -534,12 +804,40 @@
 	onDestroy(() => {
 		if (roomRef) off(roomRef);
 		if (playersRef) off(playersRef);
+		if (activityInterval) clearInterval(activityInterval);
 	});
+
+	// Start periodic activity updates (every 5 minutes) to keep room alive
+	function startActivityHeartbeat() {
+		if (activityInterval) clearInterval(activityInterval);
+
+		activityInterval = setInterval(
+			async () => {
+				if (gameMode === "host" && roomRef) {
+					console.log("[Activity Heartbeat] Updating room activity");
+					await update(roomRef, { lastActivity: Date.now() });
+				}
+			},
+			5 * 60 * 1000
+		); // Every 5 minutes
+	}
 </script>
 
 {#if gameMode === "menu"}
 	<div class="multiplayer-menu">
-		<h2>Which Name Is Which? — Multiplayer Game</h2>
+		<h2>Which Name Is Which?</h2>
+
+		<!-- <img src="{base}/assets/versus.png" /> -->
+
+		<p class="explanation">
+			Pick two names and challenge your friends to guess which is which. One
+			person creates a game and becomes the host. Other players can join the
+			same room with a code.
+		</p>
+
+		<p class="explanation">
+			Data is drawn from the U.S. Social Security Admnistration.
+		</p>
 
 		<div class="menu-section">
 			<h3>Enter Your Name</h3>
@@ -568,7 +866,11 @@
 		</div>
 
 		<div class="multiplayer-footer">
-			<p><a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie Walsh. <a href="{base}/#origin-story" target="_blank">Read the backstory.</a></p>
+			<p>
+				<a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie
+				Walsh.
+				<a href="{base}/#origin-story" target="_blank">Read the backstory.</a>
+			</p>
 		</div>
 	</div>
 {:else if gameMode === "host"}
@@ -636,11 +938,10 @@
 						<span class="player-name">{player.name}</span>
 						{#if player.id === gameState?.host}
 							<span class="host-badge">Host</span>
-						{:else}
-							<span class="player-score">{player.score}</span>
-							{#if player.isCorrect}
-								<span class="correct-indicator">✓</span>
-							{/if}
+						{/if}
+						<span class="player-score">{player.score}</span>
+						{#if player.isCorrect}
+							<span class="correct-indicator">✓</span>
 						{/if}
 					</li>
 				{/each}
@@ -650,6 +951,17 @@
 		<div class="game-settings">
 			<h3>Game Settings</h3>
 			<div class="settings-row">
+				<label>
+					<span>Max Rounds:</span>
+					<input
+						type="number"
+						min="1"
+						max="20"
+						bind:value={maxRounds}
+						onchange={() => updateGameState({ maxRounds })}
+						class="settings-input"
+					/>
+				</label>
 				<label>
 					<span>Max Attempts:</span>
 					<input
@@ -686,13 +998,75 @@
 			</div>
 		</div>
 
+		<div class="announcement-section">
+			<h3>Host Announcements</h3>
+			<div class="announcement-controls">
+				<input
+					type="text"
+					bind:value={announcementInput}
+					placeholder="Type announcement for players..."
+					class="announcement-input"
+					onkeydown={(e) => {
+						if (e.key === "Enter") sendAnnouncement();
+					}}
+				/>
+				<button class="send-announcement-btn" onclick={sendAnnouncement}
+					>Send</button
+				>
+				{#if hostAnnouncement}
+					<button class="clear-announcement-btn" onclick={clearAnnouncement}
+						>Clear</button
+					>
+				{/if}
+			</div>
+		</div>
+
+		{#if hostAnnouncement}
+			<div class="announcement-banner">
+				<strong>📢 Host:</strong>
+				{hostAnnouncement}
+			</div>
+		{/if}
+
+		{#if isGameComplete}
+			<div class="winner-banner">
+				<h2>🎉 Game Over! 🎉</h2>
+				{#if winners.length === 1}
+					<p class="winner-text">
+						Winner: <strong>{winners[0].name}</strong> with {winners[0].score ||
+							0} points!
+					</p>
+				{:else if winners.length > 1}
+					<p class="winner-text">
+						It's a tie! Winners: <strong
+							>{winners.map((w) => w.name).join(", ")}</strong
+						>
+						with {winners[0].score || 0} points each!
+					</p>
+				{/if}
+			</div>
+		{:else if gameState}
+			<div class="round-indicator">
+				Round {gameState.currentRound ?? 1} of {gameState.maxRounds ?? 5}
+			</div>
+		{/if}
+
+		<div class="game-management-buttons">
+			<button class="restart-game-btn" onclick={restartGame}>
+				🔄 Restart Game
+			</button>
+			<button class="end-game-btn" onclick={endGame}> 🏁 End Game </button>
+		</div>
+
 		<div class="game-area" bind:this={hostChartElement}>
 			<Versus
-				defaultName1="Charlotte"
-				defaultName2="Isabella"
+				defaultName1="Landon"
+				defaultName2="Nora"
 				startHidden={false}
 				showControls={true}
 				startYear={1920}
+				disableAutoReveal={true}
+				onGuessSubmit={handleHostGuess}
 			/>
 		</div>
 
@@ -701,10 +1075,37 @@
 				Use the chart controls above to choose two names. When ready, click "Set
 				Names & Start" to begin the round.
 			</p>
+			{#if gameState?.name1 && gameState?.name2}
+				{@const currentPlayer = players.find((p) => p.id === playerId)}
+				{@const attemptsUsed = currentPlayer?.attemptCount || 0}
+				{@const maxAttemptsAllowed = gameState.maxAttempts ?? 3}
+				{@const attemptsRemaining = maxAttemptsAllowed - attemptsUsed}
+
+				<div class="host-status">
+					<p>Your score: {currentPlayer?.score || 0}</p>
+					{#if gameState?.isHidden}
+						<p>Attempts remaining: {attemptsRemaining}/{maxAttemptsAllowed}</p>
+
+						{#if attemptsRemaining <= 0}
+							<p class="max-attempts-reached">No attempts remaining</p>
+						{/if}
+					{/if}
+
+					{#if hostLastGuessResult === "correct"}
+						<p class="result-correct">✓ Correct!</p>
+					{:else if hostLastGuessResult === "incorrect"}
+						<p class="result-incorrect">✗ Try again!</p>
+					{/if}
+				</div>
+			{/if}
 		</div>
 
 		<div class="multiplayer-footer">
-			<p><a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie Walsh. <a href="{base}/#origin-story" target="_blank">Read the backstory.</a></p>
+			<p>
+				<a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie
+				Walsh.
+				<a href="{base}/#origin-story" target="_blank">Read the backstory.</a>
+			</p>
 		</div>
 	</div>
 {:else if gameMode === "player"}
@@ -772,19 +1173,48 @@
 						<span class="player-name">{player.name}</span>
 						{#if player.id === gameState?.host}
 							<span class="host-badge">Host</span>
-						{:else}
-							<span class="player-score">{player.score}</span>
-							{#if player.isCorrect}
-								<span class="correct-indicator">✓</span>
-							{/if}
+						{/if}
+						<span class="player-score">{player.score}</span>
+						{#if player.isCorrect}
+							<span class="correct-indicator">✓</span>
 						{/if}
 					</li>
 				{/each}
 			</ul>
 		</div>
 
+		{#if hostAnnouncement}
+			<div class="announcement-banner">
+				<strong>📢 Host:</strong>
+				{hostAnnouncement}
+			</div>
+		{/if}
+
+		{#if isGameComplete}
+			<div class="winner-banner">
+				<h2>🎉 Game Over! 🎉</h2>
+				{#if winners.length === 1}
+					<p class="winner-text">
+						Winner: <strong>{winners[0].name}</strong> with {winners[0].score ||
+							0} points!
+					</p>
+				{:else if winners.length > 1}
+					<p class="winner-text">
+						It's a tie! Winners: <strong
+							>{winners.map((w) => w.name).join(", ")}</strong
+						>
+						with {winners[0].score || 0} points each!
+					</p>
+				{/if}
+			</div>
+		{:else if gameState}
+			<div class="round-indicator">
+				Round {gameState.currentRound ?? 1} of {gameState.maxRounds ?? 5}
+			</div>
+		{/if}
+
 		<div class="game-area" bind:this={playerChartElement}>
-			{#if gameState && gameState.name1 && gameState.name2 && gameState.isHidden}
+			{#if gameState && gameState.name1 && gameState.name2 && gameState.gameStarted}
 				{@const currentPlayer = players.find((p) => p.id === playerId)}
 
 				{#if currentPlayer}
@@ -793,7 +1223,8 @@
 					{@const hasAttemptsRemaining = attemptsUsed < maxAttemptsAllowed}
 
 					{@const playerGotItRight = currentPlayer.isCorrect}
-					{@const isGameOver = !hasAttemptsRemaining || playerGotItRight}
+					{@const isGameOver =
+						gameState.isHidden && (!hasAttemptsRemaining || playerGotItRight)}
 
 					<div class="chart-container" class:disabled={isGameOver}>
 						{#key `${gameState.name1}-${gameState.name2}-${gameState.isHidden}`}
@@ -803,6 +1234,7 @@
 								startHidden={gameState.isHidden}
 								showControls={false}
 								startYear={1920}
+								onGuessSubmit={handlePlayerGuess}
 							/>
 						{/key}
 						{#if isGameOver}
@@ -860,7 +1292,11 @@
 		</div>
 
 		<div class="multiplayer-footer">
-			<p><a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie Walsh. <a href="{base}/#origin-story" target="_blank">Read the backstory.</a></p>
+			<p>
+				<a href="{base}/" target="_blank">What's That Baby Name?</a> by Melanie
+				Walsh.
+				<a href="{base}/#origin-story" target="_blank">Read the backstory.</a>
+			</p>
 		</div>
 	</div>
 {/if}
@@ -1176,6 +1612,9 @@
 		font-size: 13px;
 		font-style: italic;
 	}
+	.explanation {
+		font-size: 18px;
+	}
 
 	.game-area {
 		margin-bottom: 20px;
@@ -1225,9 +1664,9 @@
 	}
 
 	.host-controls {
-		background: #f0e7ff;
+		/* background: #f0e7ff; */
 		padding: 15px;
-		border-radius: 8px;
+		/* border-radius: 8px; */
 		text-align: center;
 	}
 
@@ -1235,6 +1674,211 @@
 		margin: 0;
 		color: #666;
 		font-size: 14px;
+	}
+
+	.host-status {
+		margin-top: 15px;
+		padding: 15px;
+		background: white;
+		border-radius: 8px;
+		border: 2px solid #6b46c1;
+	}
+
+	.host-status p {
+		margin: 8px 0;
+		font-weight: 600;
+		font-size: 16px;
+	}
+
+	.announcement-section {
+		background: white;
+		border: 2px solid #ddd;
+		border-radius: 8px;
+		padding: 15px;
+		margin-bottom: 20px;
+	}
+
+	.announcement-section h3 {
+		margin: 0 0 12px 0;
+		font-size: 16px;
+		color: #6b46c1;
+	}
+
+	.announcement-controls {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.announcement-input {
+		flex: 1;
+		padding: 10px;
+		font-size: 14px;
+		border: 2px solid #ddd;
+		border-radius: 6px;
+		font-family: "Baloo Bhai 2", sans-serif;
+	}
+
+	.announcement-input:focus {
+		outline: none;
+		border-color: #6b46c1;
+	}
+
+	.send-announcement-btn,
+	.clear-announcement-btn {
+		padding: 10px 16px;
+		font-size: 14px;
+		font-weight: 600;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		font-family: "Baloo Bhai 2", sans-serif;
+		transition: all 0.2s;
+	}
+
+	.send-announcement-btn {
+		background: #6b46c1;
+		color: white;
+	}
+
+	.send-announcement-btn:hover {
+		background: #5a3a9f;
+	}
+
+	.clear-announcement-btn {
+		background: #999;
+		color: white;
+	}
+
+	.clear-announcement-btn:hover {
+		background: #777;
+	}
+
+	.announcement-banner {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 15px 20px;
+		border-radius: 8px;
+		margin-bottom: 15px;
+		font-size: 16px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		animation: slideDown 0.3s ease-out;
+	}
+
+	.winner-banner {
+		background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+		color: white;
+		padding: 25px 30px;
+		border-radius: 12px;
+		margin-bottom: 20px;
+		text-align: center;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+		border: 3px solid #ffd700;
+		animation:
+			slideDown 0.5s ease-out,
+			pulse 2s ease-in-out infinite;
+	}
+
+	.winner-banner h2 {
+		margin: 0 0 12px 0;
+		font-size: 28px;
+		font-weight: 800;
+		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+	}
+
+	.winner-text {
+		margin: 0;
+		font-size: 20px;
+		font-weight: 600;
+		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+	}
+
+	.winner-text strong {
+		font-size: 22px;
+		text-decoration: underline;
+		text-decoration-color: #ffd700;
+		text-decoration-thickness: 2px;
+	}
+
+	.game-management-buttons {
+		display: flex;
+		gap: 15px;
+		justify-content: center;
+		margin-bottom: 20px;
+		padding: 15px;
+		/* background: white;
+		border: 2px solid #ddd;
+		border-radius: 8px; */
+	}
+
+	.restart-game-btn,
+	.end-game-btn {
+		padding: 12px 24px;
+		font-size: 16px;
+		font-weight: 700;
+		border: none;
+		border-radius: 8px;
+		background: red;
+
+		cursor: pointer;
+		font-family: "Baloo Bhai 2", sans-serif;
+		transition: all 0.2s;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+	}
+
+	.restart-game-btn {
+		background: #4caf50;
+		color: white;
+	}
+
+	.restart-game-btn:hover {
+		background: #45a049;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	}
+
+	.end-game-btn {
+		background: red;
+		color: white;
+	}
+
+	.end-game-btn:hover {
+		background: #dc0000;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	}
+
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.02);
+		}
+	}
+
+	.round-indicator {
+		background: #f0e7ff;
+		color: #6b46c1;
+		padding: 12px 20px;
+		border-radius: 8px;
+		margin-bottom: 15px;
+		text-align: center;
+		font-size: 18px;
+		font-weight: 700;
+		border: 2px solid #6b46c1;
 	}
 
 	.multiplayer-footer {
@@ -1319,6 +1963,16 @@
 
 		.room-code {
 			font-size: 20px;
+		}
+
+		.game-management-buttons {
+			flex-direction: column;
+			gap: 10px;
+		}
+
+		.restart-game-btn,
+		.end-game-btn {
+			width: 100%;
 		}
 	}
 </style>

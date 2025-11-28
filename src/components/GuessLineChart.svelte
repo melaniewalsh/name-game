@@ -87,7 +87,8 @@
 	$effect(() => {
 		if (hostMode && onStateChange) {
 			// Only send name when hidden or revealed, otherwise send empty string
-			const nameToSend = (isHidden || isRevealed) ? (isHidden ? hiddenName : name) : "";
+			const nameToSend =
+				isHidden || isRevealed ? (isHidden ? hiddenName : name) : "";
 			onStateChange({
 				name: nameToSend,
 				isHidden,
@@ -958,32 +959,32 @@
 
 	<div class="chart-header" bind:this={chartWrapper}>
 		<!-- title -->
-		<h2 class="chart-title">Guess this name: {isHidden ? "???" : name}</h2>
+		<h2 class="chart-title">U.S Babies Named {isHidden ? "?" : name}</h2>
 
 		<!-- Camera button (hidden in player/host mode) -->
 		{#if !playerMode && !hostMode}
-		<button
-			class="screenshot-btn"
-			onclick={downloadScreenshot}
-			title="Download screenshot"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="20"
-				height="20"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
+			<!-- <button
+				class="screenshot-btn"
+				onclick={downloadScreenshot}
+				title="Download screenshot"
 			>
-				<path
-					d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-				></path>
-				<circle cx="12" cy="13" r="4"></circle>
-			</svg>
-		</button>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path
+						d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+					></path>
+					<circle cx="12" cy="13" r="4"></circle>
+				</svg>
+			</button> -->
 		{/if}
 	</div>
 
@@ -1081,10 +1082,18 @@
 				class:search-mode={!isHidden}
 			>
 				{#if isHidden}
-					{@const effectiveLettersRevealed = playerMode ? externalLettersRevealed : lettersRevealed}
-					{@const showHint = (playerMode && externalLettersRevealed > 0) || (isRandomPick && lettersRevealed > 0)}
+					{@const effectiveLettersRevealed = playerMode
+						? externalLettersRevealed
+						: lettersRevealed}
+					{@const showHint =
+						(playerMode && externalLettersRevealed > 0) ||
+						(isRandomPick && lettersRevealed > 0)}
 					{#if showHint}
-						<strong>GUESS MODE - NAME STARTS WITH "{playerMode ? hiddenName.substring(0, externalLettersRevealed).toUpperCase() : getHintText()}"</strong>
+						<strong
+							>GUESS MODE - NAME STARTS WITH "{playerMode
+								? hiddenName.substring(0, externalLettersRevealed).toUpperCase()
+								: getHintText()}"</strong
+						>
 						{#if !playerMode && lettersRevealed < hiddenName.length}
 							<button class="hint-btn" onclick={revealMoreLetters}
 								>+ More Letters</button

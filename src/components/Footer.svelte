@@ -4,9 +4,12 @@
 
 <footer>
 	<div class="content">
-		<p class="byline">By <a href="https://melaniewalsh.org">Melanie Walsh</a></p>
+		<p class="byline">
+			By <a href="https://melaniewalsh.org">Melanie Walsh</a>
+		</p>
 		<p class="description">
-			Assistant Professor in the Information School at the University of Washington
+			Writer and professor at the University of Washington. Maker of weird
+			little things.
 		</p>
 	</div>
 </footer>
@@ -15,7 +18,7 @@
 	footer {
 		margin-top: 100px;
 		padding: 32px 16px 64px;
-		background: #D1C4E9;
+		background: #d1c4e9;
 	}
 
 	.content {

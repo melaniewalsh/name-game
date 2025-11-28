@@ -5,7 +5,7 @@
 	import { goto } from "$app/navigation";
 	import { database } from "$lib/firebase";
 	import { ref, set, onValue, push, update, off } from "firebase/database";
-	import DotPlot from "$components/DotPlot.svelte";
+	import GuessLineChart from "$components/GuessLineChart.svelte";
 
 	const { id = "multiplayer-game" } = $props();
 
@@ -30,6 +30,10 @@
 	let maxAttempts = $state(3);
 	let correctPoints = $state(1);
 	let incorrectPoints = $state(0);
+	let maxRounds = $state(5);
+	let currentRound = $state(1);
+	let hostAnnouncement = $state("");
+	let announcementInput = $state("");
 
 	// Sorted players list (derived from players)
 	let sortedPlayers = $derived(
@@ -91,7 +95,10 @@
 			gameStarted: false,
 			maxAttempts: maxAttempts,
 			correctPoints: correctPoints,
-			incorrectPoints: incorrectPoints
+			incorrectPoints: incorrectPoints,
+			maxRounds: maxRounds,
+			currentRound: 1,
+			announcement: ""
 		});
 
 		// Add host as first player
@@ -165,6 +172,14 @@
 		onValue(roomRef, (snapshot) => {
 			if (snapshot.exists()) {
 				gameState = snapshot.val();
+				// Sync local state with Firebase
+				if (gameMode === "host") {
+					maxRounds = gameState.maxRounds ?? 5;
+					currentRound = gameState.currentRound ?? 1;
+					hostAnnouncement = gameState.announcement ?? "";
+				} else {
+					hostAnnouncement = gameState.announcement ?? "";
+				}
 			}
 		});
 
@@ -185,6 +200,29 @@
 	async function updateGameState(updates) {
 		if (gameMode === "host" && roomRef) {
 			await update(roomRef, updates);
+		}
+	}
+
+	// Send announcement
+	async function sendAnnouncement() {
+		if (gameMode === "host" && roomRef && announcementInput.trim()) {
+			await updateGameState({ announcement: announcementInput.trim() });
+			announcementInput = "";
+		}
+	}
+
+	// Clear announcement
+	async function clearAnnouncement() {
+		if (gameMode === "host" && roomRef) {
+			await updateGameState({ announcement: "" });
+		}
+	}
+
+	// Increment round
+	async function nextRound() {
+		if (gameMode === "host" && roomRef) {
+			const newRound = (gameState?.currentRound ?? 1) + 1;
+			await updateGameState({ currentRound: newRound });
 		}
 	}
 
@@ -223,13 +261,16 @@
 					console.log(
 						"[handleDotPlotStateChange] New round starting, resetting attempts"
 					);
+					// Increment round counter
+					const newRound = (gameState?.currentRound ?? 1) + 1;
 					resetAllPlayersAttempts().then(() => {
 						updateGameState({
 							isHidden,
 							hiddenName: name,
 							nameOptions: options || [],
 							lettersRevealed: letters,
-							isRevealed
+							isRevealed,
+							currentRound: newRound
 						});
 					});
 				} else {
@@ -495,6 +536,8 @@
 	<div class="multiplayer-menu">
 		<h2>What's That Baby Name?</h2>
 
+		<!-- <img src="{base}/assets/book.png" /> -->
+
 		<div class="menu-section">
 			<h3>Enter Your Name</h3>
 			<input
@@ -609,6 +652,17 @@
 			<h3>Game Settings</h3>
 			<div class="settings-row">
 				<label>
+					<span>Max Rounds:</span>
+					<input
+						type="number"
+						min="1"
+						max="20"
+						bind:value={maxRounds}
+						onchange={() => updateGameState({ maxRounds })}
+						class="settings-input"
+					/>
+				</label>
+				<label>
 					<span>Max Attempts:</span>
 					<input
 						type="number"
@@ -644,8 +698,44 @@
 			</div>
 		</div>
 
+		<div class="announcement-section">
+			<h3>Host Announcements</h3>
+			<div class="announcement-controls">
+				<input
+					type="text"
+					bind:value={announcementInput}
+					placeholder="Type announcement for players..."
+					class="announcement-input"
+					onkeydown={(e) => {
+						if (e.key === "Enter") sendAnnouncement();
+					}}
+				/>
+				<button class="send-announcement-btn" onclick={sendAnnouncement}
+					>Send</button
+				>
+				{#if hostAnnouncement}
+					<button class="clear-announcement-btn" onclick={clearAnnouncement}
+						>Clear</button
+					>
+				{/if}
+			</div>
+		</div>
+
+		{#if hostAnnouncement}
+			<div class="announcement-banner">
+				<strong>📢 Host:</strong>
+				{hostAnnouncement}
+			</div>
+		{/if}
+
+		{#if gameState}
+			<div class="round-indicator">
+				Round {gameState.currentRound ?? 1} of {gameState.maxRounds ?? 5}
+			</div>
+		{/if}
+
 		<div class="game-area" bind:this={hostChartElement}>
-			<DotPlot
+			<GuessLineChart
 				defaultName="Emma"
 				startHidden={false}
 				showControls={true}
@@ -656,10 +746,10 @@
 		</div>
 
 		<div class="host-controls">
-			<p class="hint">
+			<!-- <p class="hint">
 				Use the chart controls above to set up the game. When ready, click "Hide
 				Name & Play" to start the round.
-			</p>
+			</p> -->
 		</div>
 
 		<div class="multiplayer-footer">
@@ -746,6 +836,19 @@
 			</ul>
 		</div>
 
+		{#if hostAnnouncement}
+			<div class="announcement-banner">
+				<strong>📢 Host:</strong>
+				{hostAnnouncement}
+			</div>
+		{/if}
+
+		{#if gameState}
+			<div class="round-indicator">
+				Round {gameState.currentRound ?? 1} of {gameState.maxRounds ?? 5}
+			</div>
+		{/if}
+
 		<div class="game-area" bind:this={playerChartElement}>
 			{#if gameState && gameState.hiddenName && (gameState.isHidden || gameState.isRevealed)}
 				{@const currentPlayer = players.find((p) => p.id === playerId)}
@@ -763,7 +866,7 @@
 						class:disabled={isGameOver && gameState.isHidden}
 					>
 						{#key `${gameState.hiddenName}-${gameState.isHidden}-${gameState.lettersRevealed}`}
-							<DotPlot
+							<GuessLineChart
 								defaultName={gameState.hiddenName || "Emma"}
 								startHidden={gameState.isHidden}
 								showControls={true}
@@ -1095,6 +1198,104 @@
 	.settings-input:focus {
 		outline: none;
 		border-color: #6b46c1;
+	}
+
+	.announcement-section {
+		background: white;
+		border: 2px solid #ddd;
+		border-radius: 8px;
+		padding: 15px;
+		margin-bottom: 20px;
+	}
+
+	.announcement-section h3 {
+		margin: 0 0 12px 0;
+		font-size: 16px;
+		color: #6b46c1;
+	}
+
+	.announcement-controls {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.announcement-input {
+		flex: 1;
+		padding: 10px;
+		font-size: 14px;
+		border: 2px solid #ddd;
+		border-radius: 6px;
+		font-family: "Baloo Bhai 2", sans-serif;
+	}
+
+	.announcement-input:focus {
+		outline: none;
+		border-color: #6b46c1;
+	}
+
+	.send-announcement-btn,
+	.clear-announcement-btn {
+		padding: 10px 16px;
+		font-size: 14px;
+		font-weight: 600;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		font-family: "Baloo Bhai 2", sans-serif;
+		transition: all 0.2s;
+	}
+
+	.send-announcement-btn {
+		background: #6b46c1;
+		color: white;
+	}
+
+	.send-announcement-btn:hover {
+		background: #5a3a9f;
+	}
+
+	.clear-announcement-btn {
+		background: #999;
+		color: white;
+	}
+
+	.clear-announcement-btn:hover {
+		background: #777;
+	}
+
+	.announcement-banner {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 15px 20px;
+		border-radius: 8px;
+		margin-bottom: 15px;
+		font-size: 16px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		animation: slideDown 0.3s ease-out;
+	}
+
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.round-indicator {
+		background: #f0e7ff;
+		color: #6b46c1;
+		padding: 12px 20px;
+		border-radius: 8px;
+		margin-bottom: 15px;
+		text-align: center;
+		font-size: 18px;
+		font-weight: 700;
+		border: 2px solid #6b46c1;
 	}
 
 	.players-list {

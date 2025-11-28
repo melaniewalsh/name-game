@@ -147,13 +147,15 @@
 			.attr("stroke", "#6B46C1")
 			.attr("stroke-width", 1)
 			.attr("stroke-dasharray", "4 4")
-			.attr("opacity", 0.6);
+			.attr("opacity", 0.6)
+			.style("display", "none");
 		hoverDot = hoverG
 			.append("circle")
 			.attr("r", 5)
 			.attr("fill", "#6B46C1")
 			.attr("stroke", "white")
-			.attr("stroke-width", 2);
+			.attr("stroke-width", 2)
+			.style("display", "none");
 		hoverRect = svg
 			.append("rect")
 			.attr("fill", "none")
@@ -218,19 +220,27 @@
 			.attr("stroke", "#6b46c1")
 			.attr("stroke-width", 3);
 
-		// Highlight year lines
+		// Highlight year arrows
 		highlightG
-			.selectAll("line")
+			.selectAll("path")
 			.data(highlightYears)
-			.join("line")
-			.attr("x1", (d) => x(d))
-			.attr("x2", (d) => x(d))
-			.attr("y1", 0)
-			.attr("y2", innerH)
-			.attr("stroke", "#6b46c1")
+			.join("path")
+			.attr("d", (d) => {
+				const xPos = x(d);
+				const dataPoint = cachedData.find((pt) => pt.year === d);
+				if (!dataPoint) return "";
+				const yPos = y(dataPoint.value);
+				const arrowLength = 30;
+				const arrowWidth = 6;
+				const gap = 10;
+				const startY = yPos - arrowLength - gap;
+				const endY = yPos - gap;
+				return `M ${xPos},${startY} L ${xPos},${endY} M ${xPos - arrowWidth},${endY - arrowWidth} L ${xPos},${endY} L ${xPos + arrowWidth},${endY - arrowWidth}`;
+			})
+			.attr("stroke", "black")
 			.attr("stroke-width", 2)
-			.attr("stroke-dasharray", "2 2")
-			.attr("opacity", 0.3);
+			.attr("fill", "none")
+			.attr("opacity", 0.7);
 
 		hoverRect
 			.attr("width", innerW)
@@ -270,8 +280,13 @@
 		if (d) {
 			const px = x(d.year);
 			const py = y(d.value);
-			hoverDot.attr("cx", px).attr("cy", py);
-			hoverLine.attr("x1", px).attr("x2", px).attr("y1", py).attr("y2", innerH);
+			hoverDot.attr("cx", px).attr("cy", py).style("display", "block");
+			hoverLine
+				.attr("x1", px)
+				.attr("x2", px)
+				.attr("y1", py)
+				.attr("y2", innerH)
+				.style("display", "block");
 
 			const rankings = nameRankings.get(year);
 			let rank = 0;
@@ -301,6 +316,8 @@
 				rank
 			};
 		} else {
+			hoverDot.style("display", "none");
+			hoverLine.style("display", "none");
 			tooltip.show = false;
 		}
 	}

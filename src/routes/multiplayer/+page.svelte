@@ -1,5 +1,5 @@
 <script>
-	import DotPlotMultiplayer from "$components/DotPlotMultiplayer.svelte";
+	import GuessLineChartMultiplayer from "$components/GuessLineChartMultiplayer.svelte";
 </script>
 
 <svelte:head>
@@ -8,7 +8,7 @@
 </svelte:head>
 
 <div class="multiplayer-page">
-	<DotPlotMultiplayer />
+	<GuessLineChartMultiplayer />
 </div>
 
 <style>

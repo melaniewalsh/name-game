@@ -7,9 +7,9 @@
 	import Details from "$components/Details.svelte";
 	import Swiper from "$components/Swiper.svelte";
 	import Figure from "$components/Figure.svelte";
-	import DotPlot from "$components/DotPlot.svelte";
-	import DotPlotSimple from "$components/DotPlotSimple.svelte";
-	import DotPlotMultiplayer from "$components/DotPlotMultiplayer.svelte";
+	import GuessLineChart from "$components/GuessLineChart.svelte";
+	import GuessLineChartSimple from "$components/GuessLineChartSimple.svelte";
+	import GuessLineChartMultiplayer from "$components/GuessLineChartMultiplayer.svelte";
 	import MultiplayerButton from "$components/MultiplayerButton.svelte";
 	import LineChart from "$components/LineChart.svelte";
 	import Versus from "$components/Versus.svelte";
@@ -22,7 +22,7 @@
 	const copy = getContext("copy");
 	const { body } = copy;
 	const { title, description, byline, others } = copy.meta;
-	const components = { Ul, Details, Swiper, DotPlot, DotPlotSimple, DotPlotMultiplayer, MultiplayerButton, LineChart, Versus, VersusMultiplayer, VersusMultiplayerButton, Figure, Table, Grid };
+	const components = { Ul, Details, Swiper, GuessLineChart, GuessLineChartSimple, GuessLineChartMultiplayer, MultiplayerButton, LineChart, Versus, VersusMultiplayer, VersusMultiplayerButton, Figure, Table, Grid };
 	// const data = getContext("data");
 
 	onMount(() => {

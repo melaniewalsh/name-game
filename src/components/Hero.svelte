@@ -1,11 +1,17 @@
 <script>
 	// import Bear from "$components/Hero.Bear.svelte";
 	const { title, description, byline, others } = $props();
+	import useWindowDimensions from "$runes/useWindowDimensions.svelte.js";
+
+	let dimensions = new useWindowDimensions();
 </script>
 
 <section id="hero">
 	<!-- <Bear /> -->
-
+	<!-- <div class="wrapper" class:ready={dimensions.width && dimensions.width > 0}> -->
+	<!-- <img class="bear" src="assets/hero/bear.png" alt="bear" /> -->
+	<!-- <p class="baby">👶</p> -->
+	<!-- </div> -->
 	<div class="c">
 		<h1 class="text-outline">{title}</h1>
 		<p class="description">{description}</p>
@@ -27,7 +33,8 @@
 	}
 
 	h1 {
-		color: #B39DDB;
+		padding-top: 50px;
+		color: #b39ddb;
 		--color-text-outline: var(--color-fg);
 		--stroke-width: 2px;
 		letter-spacing: 0.0325em;
@@ -45,7 +52,7 @@
 			var(--stroke-width-n) var(--stroke-width) 0
 				var(--color-text-outline, #fff),
 			var(--stroke-width-n) 0 0 var(--color-text-outline, #fff),
-			8px 8px #6B46C1;
+			8px 8px #6b46c1;
 	}
 
 	h1,
@@ -56,7 +63,9 @@
 	p {
 		line-height: 1.2;
 	}
-
+	.baby {
+		font-size: 200px;
+	}
 	.description {
 		font-size: var(--32px);
 	}
@@ -67,6 +76,22 @@
 
 	.others {
 		font-size: var(--16px);
+	}
+	.bear {
+		bottom: 0;
+		position: absolute;
+		width: 200px;
+	}
+	.wrapper {
+		height: 250px;
+		margin-top: 3rem;
+		position: relative;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		width: 100%;
+		max-width: 600px;
+		margin: 0 auto 3rem auto;
 	}
 
 	.byline,

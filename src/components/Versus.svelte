@@ -10,11 +10,13 @@
 	const {
 		csvUrl = `${base}/data/ssa_babynames_filtered.csv`,
 		height = 360,
-		defaultName1 = "Charlotte",
-		defaultName2 = "Isabella",
+		defaultName1 = "Landon",
+		defaultName2 = "Nora",
 		startHidden = true,
 		startYear: propStartYear = 1880,
-		showControls = true
+		showControls = true,
+		disableAutoReveal = false, // Disable auto-reveal on correct guess (for multiplayer host mode)
+		onGuessSubmit = null // Callback when a guess is submitted (guess1, guess2, isCorrect)
 	} = $props();
 
 	// State
@@ -22,6 +24,7 @@
 	let name2 = $state(defaultName2);
 	const shouldStartHidden = startHidden === true || startHidden === "true";
 	let isHidden = $state(shouldStartHidden);
+	let wasRevealed = $state(false); // Track if game was revealed after being played
 	let guess1 = $state("");
 	let guess2 = $state("");
 	let correct1 = $state(false);
@@ -302,46 +305,88 @@
 
 		// Update drop zone positions based on line positions
 		if (isHidden && series1.length > 0 && series2.length > 0) {
-			// Find a point about 30% through the chart for left drop zone
-			const leftYear = Math.floor(startYear + (yearRange[1] - startYear) * 0.3);
-			const leftPoint1 =
-				series1.find((d) => d.date.getFullYear() >= leftYear) ||
-				series1[Math.floor(series1.length * 0.3)];
+			// Purple (line 1): Use the end of the line (last point)
+			const end1 = series1[series1.length - 1];
 
-			// Find a point about 70% through the chart for right drop zone
-			const rightYear = Math.floor(
-				startYear + (yearRange[1] - startYear) * 0.7
+			// Pink (line 2): Use the peak (maximum)
+			const peak2 = series2.reduce(
+				(max, d) => (d.count > max.count ? d : max),
+				series2[0]
 			);
-			const rightPoint2 =
-				series2.find((d) => d.date.getFullYear() >= rightYear) ||
-				series2[Math.floor(series2.length * 0.7)];
 
-			if (leftPoint1 && rightPoint2) {
-				const y1Pos = y(leftPoint1.count);
-				const y2Pos = y(rightPoint2.count);
+			const x1Pos = x(end1.date);
+			const y1Pos = y(end1.count);
+			const x2Pos = x(peak2.date);
+			const y2Pos = y(peak2.count);
 
-				// Convert to percentages relative to chart dimensions
-				const topPercent =
-					((y1Pos + margin.top) / (ih + margin.top + margin.bottom)) * 100;
-				const bottomPercent =
-					((y2Pos + margin.top) / (ih + margin.top + margin.bottom)) * 100;
+			// Find where opposite line is at each position's x coordinate
+			const end1Year = end1.date.getFullYear();
+			const peak2Year = peak2.date.getFullYear();
+			const line2AtEnd1 = series2.find(
+				(d) => d.date.getFullYear() === end1Year
+			);
+			const line1AtPeak2 = series1.find(
+				(d) => d.date.getFullYear() === peak2Year
+			);
 
-				// Offset vertically to avoid covering the lines
-				// Purple line - offset up if space available, otherwise down
-				const offset1 = topPercent > 25 ? -15 : 15;
-				// Pink line - offset down if space available, otherwise up
-				const offset2 = bottomPercent < 75 ? 15 : -15;
+			// Convert to percentages relative to the full chart container (including margins)
+			const totalHeight = ih + margin.top + margin.bottom;
+			const leftPercent = ((x1Pos + margin.left) / width) * 100;
+			const topPercent = ((y1Pos + margin.top) / totalHeight) * 100;
 
-				// Left side for purple line, right side for pink line
-				dropZone1Position = {
-					top: `${Math.max(10, Math.min(80, topPercent + offset1))}%`,
-					left: `30%`
-				};
-				dropZone2Position = {
-					top: `${Math.max(10, Math.min(80, bottomPercent + offset2))}%`,
-					left: `70%`
-				};
+			const rightPercent = ((x2Pos + margin.left) / width) * 100;
+			const bottomPercent = ((y2Pos + margin.top) / totalHeight) * 100;
+
+			// Check if too close to top (would go off chart or overlap header)
+			const tooCloseToTop1 = topPercent < 15;
+			const tooCloseToTop2 = bottomPercent < 15;
+
+			// Check if opposite line would be in the way - be more liberal
+			let hasLineInWay1 = false;
+			let hasLineInWay2 = false;
+
+			// For purple box at end of line 1
+			if (line2AtEnd1) {
+				const y2AtEnd1 = y(line2AtEnd1.count);
+				const y2Percent =
+					((y2AtEnd1 + margin.top) / (ih + margin.top + margin.bottom)) * 100;
+				// Box would occupy from (topPercent - 15) to (topPercent + 3) with extra buffer
+				const boxTop = topPercent - 18;
+				const boxBottom = topPercent + 5;
+				hasLineInWay1 = y2Percent >= boxTop && y2Percent <= boxBottom;
 			}
+
+			// For pink box at peak of line 2
+			if (line1AtPeak2) {
+				const y1AtPeak2 = y(line1AtPeak2.count);
+				const y1Percent =
+					((y1AtPeak2 + margin.top) / (ih + margin.top + margin.bottom)) * 100;
+				const boxTop = bottomPercent - 18;
+				const boxBottom = bottomPercent + 5;
+				hasLineInWay2 = y1Percent >= boxTop && y1Percent <= boxBottom;
+			}
+
+			// Determine positioning strategy
+			let position1, position2;
+
+			// Purple: Always position to the right side with left-pointing arrow
+			// Add offset to push box further to the right
+			position1 = {
+				top: `${topPercent}%`,
+				left: `${leftPercent + 3}%`,
+				placement: "side-right"
+			};
+
+			// Pink: Always position to the left side with right-pointing arrow
+			// Add offset to push box further to the left
+			position2 = {
+				top: `${bottomPercent}%`,
+				left: `${rightPercent - 3}%`,
+				placement: "side-left"
+			};
+
+			dropZone1Position = position1;
+			dropZone2Position = position2;
 		}
 	}
 
@@ -362,13 +407,30 @@
 		correct2 = g2 === name2.toLowerCase();
 		showFeedback = true;
 
-		if (correct1 && correct2) {
+		const isCorrect = correct1 && correct2;
+
+		// Call the callback if provided (for multiplayer mode)
+		if (onGuessSubmit) {
+			onGuessSubmit(guess1.trim(), guess2.trim(), isCorrect);
+		}
+
+		if (isCorrect) {
 			showCorrectMessage = true;
 			confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-			setTimeout(() => {
-				isHidden = false;
-				showCorrectMessage = false;
-			}, 1000);
+
+			// Only auto-reveal if not disabled (single player mode)
+			if (!disableAutoReveal) {
+				setTimeout(() => {
+					isHidden = false;
+					wasRevealed = true;
+					showCorrectMessage = false;
+				}, 1000);
+			} else {
+				// In multiplayer host mode, just clear the message but keep hidden
+				setTimeout(() => {
+					showCorrectMessage = false;
+				}, 1000);
+			}
 		} else {
 			// Show wrong message
 			showWrongMessage = true;
@@ -387,6 +449,7 @@
 
 	function revealNames() {
 		isHidden = false;
+		wasRevealed = true;
 		correct1 = true;
 		correct2 = true;
 	}
@@ -502,9 +565,9 @@
 		const element = document.elementFromPoint(touch.clientX, touch.clientY);
 
 		// Check if we're over a drop zone
-		if (element && element.closest('.chart-drop-zone')) {
-			const dropZone = element.closest('.chart-drop-zone');
-			const dropZones = document.querySelectorAll('.chart-drop-zone');
+		if (element && element.closest(".chart-drop-zone")) {
+			const dropZone = element.closest(".chart-drop-zone");
+			const dropZones = document.querySelectorAll(".chart-drop-zone");
 			if (dropZone === dropZones[0]) {
 				dropZone1Highlight = true;
 				dropZone2Highlight = false;
@@ -539,9 +602,9 @@
 		const element = document.elementFromPoint(touch.clientX, touch.clientY);
 
 		// Check if we dropped on a drop zone
-		if (element && element.closest('.chart-drop-zone')) {
-			const dropZone = element.closest('.chart-drop-zone');
-			const dropZones = document.querySelectorAll('.chart-drop-zone');
+		if (element && element.closest(".chart-drop-zone")) {
+			const dropZone = element.closest(".chart-drop-zone");
+			const dropZones = document.querySelectorAll(".chart-drop-zone");
 
 			// Haptic feedback on drop
 			if (navigator.vibrate) {
@@ -565,6 +628,7 @@
 
 	function reset() {
 		isHidden = false;
+		wasRevealed = false;
 		guess1 = "";
 		guess2 = "";
 		correct1 = false;
@@ -578,17 +642,43 @@
 	function pickRandomNames() {
 		if (topNames.length < 2) return;
 
-		// Pick two different random names from top 1000
+		// Calculate total births for each name
+		const nameTotals = new Map();
+		all.forEach((d) => {
+			const current = nameTotals.get(d.name) || 0;
+			nameTotals.set(d.name, current + d.n);
+		});
+
+		// Pick first random name from top 1000
 		const idx1 = Math.floor(Math.random() * topNames.length);
-		let idx2 = Math.floor(Math.random() * topNames.length);
-		while (idx2 === idx1) {
-			idx2 = Math.floor(Math.random() * topNames.length);
+		const firstName = topNames[idx1];
+		const firstTotal = nameTotals.get(firstName) || 0;
+
+		// Find names with total births within 5k of the first name
+		const similarNames = topNames.filter((n) => {
+			if (n === firstName) return false;
+			const total = nameTotals.get(n) || 0;
+			return Math.abs(total - firstTotal) <= 5000;
+		});
+
+		// If we have similar names, pick from them; otherwise pick any different name
+		let secondName;
+		if (similarNames.length > 0) {
+			const idx2 = Math.floor(Math.random() * similarNames.length);
+			secondName = similarNames[idx2];
+		} else {
+			// Fallback: just pick a different random name
+			let idx2 = Math.floor(Math.random() * topNames.length);
+			while (idx2 === idx1) {
+				idx2 = Math.floor(Math.random() * topNames.length);
+			}
+			secondName = topNames[idx2];
 		}
 
-		name1 = topNames[idx1];
-		name2 = topNames[idx2];
-		name1Input = name1;
-		name2Input = name2;
+		name1 = firstName;
+		name2 = secondName;
+		name1Input = firstName;
+		name2Input = secondName;
 		isHidden = true;
 		guess1 = "";
 		guess2 = "";
@@ -682,26 +772,52 @@
 			<div
 				class="chart-drop-zone"
 				class:highlighted={dropZone1Highlight}
+				class:corner-left={dropZone1Position.placement === "top-left"}
+				class:corner-right={dropZone1Position.placement === "top-right"}
+				class:side-left={dropZone1Position.placement === "side-left"}
+				class:side-right={dropZone1Position.placement === "side-right"}
 				ondragover={(e) => handleDragOver(e, 1)}
 				ondragleave={() => handleDragLeave(1)}
 				ondrop={() => handleDrop(1)}
 				style="border-color: {color1}; top: {dropZone1Position.top}; left: {dropZone1Position.left};"
 			>
-				<span class="drop-label" style="color: {color1}">
-					{guess1 || "↓"}
+				<span
+					class="drop-label"
+					class:has-name={!!guess1}
+					style="color: {guess1 ? 'white' : color1}"
+				>
+					{guess1 ||
+						(dropZone1Position.placement?.startsWith("side")
+							? dropZone1Position.placement === "side-left"
+								? "→"
+								: "←"
+							: "↓")}
 				</span>
 			</div>
 
 			<div
 				class="chart-drop-zone"
 				class:highlighted={dropZone2Highlight}
+				class:corner-left={dropZone2Position.placement === "top-left"}
+				class:corner-right={dropZone2Position.placement === "top-right"}
+				class:side-left={dropZone2Position.placement === "side-left"}
+				class:side-right={dropZone2Position.placement === "side-right"}
 				ondragover={(e) => handleDragOver(e, 2)}
 				ondragleave={() => handleDragLeave(2)}
 				ondrop={() => handleDrop(2)}
 				style="border-color: {color2}; top: {dropZone2Position.top}; left: {dropZone2Position.left};"
 			>
-				<span class="drop-label" style="color: {color2}">
-					{guess2 || "↓"}
+				<span
+					class="drop-label"
+					class:has-name={!!guess2}
+					style="color: {guess2 ? 'white' : color2}"
+				>
+					{guess2 ||
+						(dropZone2Position.placement?.startsWith("side")
+							? dropZone2Position.placement === "side-left"
+								? "→"
+								: "←"
+							: "↓")}
 				</span>
 			</div>
 		{/if}
@@ -775,7 +891,7 @@
 
 	{#if showControls === true || showControls === "true"}
 		<div class="controls">
-			{#if !isHidden}
+			{#if !isHidden && !wasRevealed}
 				<div class="name-setup">
 					<div class="setup-group">
 						<label>Choose Name 1 (Purple):</label>
@@ -839,15 +955,20 @@
 					<button
 						class="start-btn"
 						onclick={() => {
-							console.log('Set Names & Start clicked! Current names:', name1, name2);
-							console.log('Setting isHidden to true');
+							console.log(
+								"Set Names & Start clicked! Current names:",
+								name1,
+								name2
+							);
+							console.log("Setting isHidden to true");
 							isHidden = true;
+							wasRevealed = false;
 							showFeedback = false;
 							guess1 = "";
 							guess2 = "";
 							correct1 = false;
 							correct2 = false;
-							console.log('isHidden is now:', isHidden);
+							console.log("isHidden is now:", isHidden);
 						}}>Set Names & Start</button
 					>
 					<button class="random-btn" onclick={pickRandomNames}
@@ -864,6 +985,10 @@
 						>
 						<button class="reset-btn" onclick={reset}>Reset</button>
 					</div>
+				</div>
+			{:else if wasRevealed}
+				<div class="button-row">
+					<button class="reset-btn" onclick={reset}>New Round</button>
 				</div>
 			{/if}
 		</div>
@@ -1054,27 +1179,168 @@
 		background: rgba(255, 255, 255, 0.5);
 		pointer-events: all;
 		z-index: 10;
-		transform: translate(-50%, -50%);
 		min-width: 120px;
 		min-height: 50px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		backdrop-filter: blur(2px);
+		margin-top: -6px;
 	}
 
-	.chart-drop-zone.highlighted {
-		background: rgba(255, 255, 255, 0.75);
+	/* Corner positioning - above the peak */
+	.chart-drop-zone.corner-left {
+		transform: translate(0, -100%);
+	}
+
+	.chart-drop-zone.corner-right {
+		transform: translate(-100%, -100%);
+	}
+
+	/* Side positioning - to the left or right of peak */
+	.chart-drop-zone.side-left {
+		transform: translate(-100%, -50%);
+	}
+
+	.chart-drop-zone.side-right {
+		transform: translate(0, -50%);
+	}
+
+	/* Arrow pointing down to the line (for top positioning) */
+	.chart-drop-zone.corner-left::after {
+		content: "";
+		position: absolute;
+		bottom: -8px;
+		left: 20px;
+		width: 0;
+		height: 0;
+		border-left: 10px solid transparent;
+		border-right: 10px solid transparent;
+		border-top: 8px solid;
+		border-top-color: inherit;
+	}
+
+	.chart-drop-zone.corner-right::after {
+		content: "";
+		position: absolute;
+		bottom: -8px;
+		right: 20px;
+		width: 0;
+		height: 0;
+		border-left: 10px solid transparent;
+		border-right: 10px solid transparent;
+		border-top: 8px solid;
+		border-top-color: inherit;
+	}
+
+	/* Arrow pointing right to the line (for side-left positioning) */
+	.chart-drop-zone.side-left::after {
+		content: "";
+		position: absolute;
+		right: -8px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 0;
+		height: 0;
+		border-top: 10px solid transparent;
+		border-bottom: 10px solid transparent;
+		border-left: 8px solid;
+		border-left-color: inherit;
+	}
+
+	/* Arrow pointing left to the line (for side-right positioning) */
+	.chart-drop-zone.side-right::after {
+		content: "";
+		position: absolute;
+		left: -8px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 0;
+		height: 0;
+		border-top: 10px solid transparent;
+		border-bottom: 10px solid transparent;
+		border-right: 8px solid;
+		border-right-color: inherit;
+	}
+
+	/* Highlighted states */
+	.chart-drop-zone.highlighted.corner-left {
 		border-style: solid;
 		border-width: 4px;
-		transform: translate(-50%, -50%) scale(1.05);
+		transform: translate(0, -100%) scale(1.05);
 		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+		background: rgba(255, 255, 255, 0.7);
+	}
+
+	.chart-drop-zone.highlighted.corner-right {
+		border-style: solid;
+		border-width: 4px;
+		transform: translate(-100%, -100%) scale(1.05);
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+		background: rgba(255, 255, 255, 0.7);
+	}
+
+	.chart-drop-zone.highlighted.side-left {
+		border-style: solid;
+		border-width: 4px;
+		transform: translate(-100%, -50%) scale(1.05);
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+		background: rgba(255, 255, 255, 0.7);
+	}
+
+	.chart-drop-zone.highlighted.side-right {
+		border-style: solid;
+		border-width: 4px;
+		transform: translate(0, -50%) scale(1.05);
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+		background: rgba(255, 255, 255, 0.7);
+	}
+
+	/* Highlighted arrows */
+	.chart-drop-zone.highlighted.corner-left::after {
+		border-width: 10px 12px 10px 12px;
+		border-left-color: transparent;
+		border-right-color: transparent;
+		border-top-color: inherit;
+		bottom: -10px;
+		left: 20px;
+	}
+
+	.chart-drop-zone.highlighted.corner-right::after {
+		border-width: 10px 12px 10px 12px;
+		border-left-color: transparent;
+		border-right-color: transparent;
+		border-top-color: inherit;
+		bottom: -10px;
+		right: 20px;
+	}
+
+	.chart-drop-zone.highlighted.side-left::after {
+		border-width: 12px 10px 12px 10px;
+		border-top-color: transparent;
+		border-bottom-color: transparent;
+		border-left-color: inherit;
+		right: -10px;
+	}
+
+	.chart-drop-zone.highlighted.side-right::after {
+		border-width: 12px 10px 12px 10px;
+		border-top-color: transparent;
+		border-bottom-color: transparent;
+		border-right-color: inherit;
+		left: -10px;
 	}
 
 	.chart-drop-zone .drop-label {
 		font-weight: 700;
 		font-size: 18px;
 		display: block;
+	}
+
+	.chart-drop-zone .drop-label.has-name {
+		background: #6b46c1;
+		color: white;
+		padding: 8px 16px;
+		border-radius: 6px;
 	}
 
 	.guess-row {
